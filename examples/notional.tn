@@ -1,0 +1,10 @@
+fn notional(px: slice(0, 100000000), qty: slice(-1000000, 1000000))
+    -> int(-10000000000000000, 10000000000000000)
+  requires (len(px) == len(qty) && len(px) <= 100)
+{
+  let acc: int(-10000000000000000, 10000000000000000) = 0;
+  for i upto len(px) invariant (-100000000000000 * i <= acc && acc <= 100000000000000 * i) {
+    acc = acc + px[i] * qty[i];
+  }
+  result = acc;
+}

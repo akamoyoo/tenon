@@ -1,7 +1,7 @@
 import Tenon
 import Ewma
 import Sum8
-import Surface
+import SurfaceExamples
 import Emit
 import Legacy
 /-! Tenon examples. First the K4 examples of emitter round 4 moved to Tenon (slices, `len`, `forE`, comparisons,
@@ -545,11 +545,11 @@ kfn rolling_mean(x: fslice, w: int(1, 1000000), out: inout fslice) -> int(0, 0)
   let acc: f64 = 0.0;
   let m: int(0, 1000000) = w;
   if len(x) < w { m = len(x); } else { }
-  for i upto m invariant (True) {
+  for i upto m invariant_lean (True) {
     acc = acc + x[i];
     out[i] = acc / (i + 1);
   }
-  for j upto len(x) - m invariant (True) {
+  for j upto len(x) - m invariant_lean (True) {
     acc = acc + x[j + m] - x[j];
     out[j + m] = acc / m;
   }
@@ -574,7 +574,7 @@ kfn dot(x: fslice, y: fslice, out: inout fslice) -> int(0, 0)
   let a6: f64 = 0.0;
   let a7: f64 = 0.0;
   let n8: int(0, 1152921504606846975) = len(x) / 8;
-  for i upto n8 invariant (True) {
+  for i upto n8 invariant_lean (True) {
     a0 = a0 + x[8 * i + 0] * y[8 * i + 0];
     a1 = a1 + x[8 * i + 1] * y[8 * i + 1];
     a2 = a2 + x[8 * i + 2] * y[8 * i + 2];
@@ -584,7 +584,7 @@ kfn dot(x: fslice, y: fslice, out: inout fslice) -> int(0, 0)
     a6 = a6 + x[8 * i + 6] * y[8 * i + 6];
     a7 = a7 + x[8 * i + 7] * y[8 * i + 7];
   }
-  for j upto len(x) - 8 * n8 invariant (True) {
+  for j upto len(x) - 8 * n8 invariant_lean (True) {
     a0 = a0 + x[8 * n8 + j] * y[8 * n8 + j];
   }
   out[0] = ((a0 + a1) + (a2 + a3)) + ((a4 + a5) + (a6 + a7));
@@ -643,7 +643,7 @@ kfn rolling_var_s(x: fslice, w: int(1, 1000000), out: inout fslice) -> int(0, 0)
   let s1: f64 = 0.0;
   let s2: f64 = 0.0;
   let m: int(0, 1000000) = sel(w <= len(x), w, len(x));
-  for i upto m invariant (True) {
+  for i upto m invariant_lean (True) {
     s1 = s1 + x[i];
     s2 = s2 + x[i] * x[i];
     let n: f64 = i + 1;
@@ -651,7 +651,7 @@ kfn rolling_var_s(x: fslice, w: int(1, 1000000), out: inout fslice) -> int(0, 0)
     out[i] = sel(v <= 0.0, 0.0, v);
   }
   let mf: f64 = m;
-  for j upto len(x) - m invariant (True) {
+  for j upto len(x) - m invariant_lean (True) {
     let a: f64 = x[j + m];
     let b: f64 = x[j];
     s1 = s1 + a - b;
@@ -675,14 +675,14 @@ kfn rolling_std(x: fslice, w: int(1, 1000000), out: inout fslice) -> int(0, 0)
   let s2: f64 = 0.0;
   let m: int(0, 1000000) = w;
   if len(x) < w { m = len(x); } else { }
-  for i upto m invariant (True) {
+  for i upto m invariant_lean (True) {
     s1 = s1 + x[i];
     s2 = s2 + x[i] * x[i];
     let v: f64 = (s2 - s1 * s1 / (i + 1)) / (i + 1);
     if v <= 0.0 { v = 0.0; } else { }
     out[i] = sqrt(v);
   }
-  for j upto len(x) - m invariant (True) {
+  for j upto len(x) - m invariant_lean (True) {
     s1 = s1 + x[j + m] - x[j];
     s2 = s2 + x[j + m] * x[j + m] - x[j] * x[j];
     let v: f64 = (s2 - s1 * s1 / m) / m;
@@ -701,7 +701,7 @@ kfn fcontract(a: fslice, b: fslice, c: fslice, o1: inout fslice, o2: inout fslic
     -> int(0, 0)
   requires (always)
 {
-  for i upto len(a) invariant (True) {
+  for i upto len(a) invariant_lean (True) {
     o1[i] = a[i] * b[i] + c[i];
     o2[i] = c[i] - a[i] * b[i];
     o3[i] = (a[i] + b[i]) + c[i];
@@ -713,7 +713,7 @@ kfn fcontract(a: fslice, b: fslice, c: fslice, o1: inout fslice, o2: inout fslic
 kfn funary(x: fslice, o1: inout fslice, o2: inout fslice, o3: inout fslice, o4: inout fslice) -> int(0, 0)
   requires (always)
 {
-  for i upto len(x) invariant (True) {
+  for i upto len(x) invariant_lean (True) {
     o1[i] = fabs(x[i]);
     o2[i] = -x[i];
     o3[i] = sqrt(x[i]);

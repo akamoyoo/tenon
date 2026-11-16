@@ -6,24 +6,27 @@ differ, the file is right.
 
 ## A file
 
-A Tenon function is written in a Lean file that imports `Surface`:
+A Tenon source file (`.tn`) contains functions and nothing else:
 
 ```
-import Surface
-
-kfn name(params) -> int(lo, hi)
+fn name(params) -> int(lo, hi)
   requires (condition)
-  uses [callee1, callee2]        -- optional
+  uses [callee1, callee2]        -- optional; callees must appear earlier in the file
 {
   statements
 }
-
-open Tenon in
-theorem nameOk : FnOk [callee1, callee2] name := by
-  kvc name [callee1, callee2]
 ```
 
-`lake build` succeeds only if every theorem is proved. There is no other notion of "compiles".
+```
+tenon check file.tn      prove every function; report what could not be proved and where
+tenon emit file.tn       the same, then print the C for the file if everything was proved
+```
+
+`tenon` writes one theorem per function and has Lean check it. A function is accepted only if Lean
+accepted its theorem; nothing in the command is trusted. (The same functions can be written inside a
+Lean file with `kfn` in place of `fn`, followed by `theorem nameOk : FnOk [callees] name := by kvc name
+[callees]`; that is how `SurfaceExamples.lean` and `Examples.lean` are written, and it allows a proof by
+hand where the automatic one fails.)
 
 ## Types
 
@@ -126,11 +129,18 @@ Rules that differ from C:
 
 ## Invariants
 
-A loop carries an invariant: a Lean proposition in parentheses. In it
+A loop carries an invariant, in parentheses, in the same notation as `requires`:
 
-- a variable's name stands for its integer value,
-- `name_len` stands for the length of an array variable,
-- the loop variable of a `for` stands for the number of completed iterations (`iter_` in a `loop`).
+```
+for i upto len(x) invariant (0 <= cnt && cnt <= i) { ... }
+loop upto len(a) + 1 invariant (lo <= hi && hi <= len(a) && hi - lo <= len(a) - iter_) { ... }
+for i upto len(x) invariant (always) { ... }
+```
+
+Terms: integer literals, integer variables in scope, `len(array)`, `+`, `-`, `*`, unary `-`,
+parentheses; the loop variable of a `for`, and `iter_` in any loop, stand for the number of completed
+iterations. Comparisons: `<=`, `<`, `==`, `>=`, `>`. Combination: `&&`. `always` is the trivial invariant.
+(Inside a Lean file, `invariant_lean (P)` takes an arbitrary Lean proposition instead.)
 
 You do not write, and must not expect to need:
 
@@ -138,30 +148,37 @@ You do not write, and must not expect to need:
 - that an array keeps its length, or that a variable the body does not assign is unchanged;
 - anything about floats (there is nothing to prove about them except indices).
 
-What you do write is what relates the variables the loop changes: `lo ≤ hi`, `cnt ≤ i`,
-`|acc| ≤ 10^9 · i`. For a loop that only reads and writes floats at index `i`, the invariant is `True`.
+What you do write is what relates the variables the loop changes: `lo <= hi`, `cnt <= i`,
+`acc <= 1000000000 * i`. For a loop that only reads and writes floats at index `i`, the invariant is
+`always`.
 
 To find an invariant for an integer accumulator, ask how large it can be after `i` iterations and write
 that bound; then choose the accumulator's declared range to contain the bound at the largest length
 `requires` allows.
 
-## Proving
+## When the check fails
 
-`kvc f [callees]` proves `FnOk [callees] f`. It unfolds the obligations, uses the types, the unchanged
-variables and the lengths, and closes arithmetic with a decision procedure for linear integer
-arithmetic. If it fails, Lean shows the goal it could not prove, in terms of the values of your
-variables. The usual causes, in order of frequency:
+```
+examples/notional_bad.tn:7: in `notional`: cannot show that this value stays within 64 bits
+    acc = acc + px[i] * qty[i];
+    needed: INT64_MIN <= <element> * <element>
+    (5 more obligation(s) of `notional` not shown; they often follow from the first. `tenon check -a` shows all.)
+```
 
-1. The invariant is too weak: the goal is true but does not follow from what the invariant says.
+The message names the statement and the fact that could not be shown, in the names of the source
+(`<element>` is a value read from an array). The usual causes, in order of frequency:
+
+1. The invariant is too weak: the fact is true but does not follow from what the invariant says.
 2. A declared range is too small for a value the code computes (often an intermediate sum).
-3. `requires` does not bound a length, so a bound that depends on it cannot be shown.
-4. The fact is not linear arithmetic (a product of two variables, a bit operation): `kvc` does not
-   attempt it. Rewrite the code, or prove the function by hand with the tactics `kvc` is made of
-   (`env_open`, `vc_loop`, `vc_leaves` in `Tenon.lean`).
+3. `requires` does not bound a length or exclude a case (an empty array, a zero divisor).
+4. The fact is beyond the automatic procedure. It decides linear integer arithmetic, bounds a product
+   of two values from their constant ranges, and bounds a quotient `a / b` from `a <= c * b`. Bit
+   operations and anything about the contents of a whole array are not attempted: rewrite the code, or
+   move the function into a Lean file and prove it by hand with the tactics `kvc` is made of.
 
-A whole program is a list of functions, newest first; `ProgOk [f, g]` needs `FnOk [g] f`, `FnOk [] g`,
-that declared ranges fit 64 bits, and that each `requires` refers to parameters of the right kind. See
-`prog2Ok` in `Surface.lean`.
+A whole program is a list of functions; besides each function's theorem it needs that declared ranges
+fit 64 bits and that each `requires` refers to parameters of the right kind (`ProgOk`; see `prog2Ok` in
+`SurfaceExamples.lean`). `tenon check` does not yet state this whole-program theorem.
 
 ## What the proof gives you
 

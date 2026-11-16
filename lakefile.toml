@@ -1,5 +1,5 @@
 name = "tenon"
-defaultTargets = ["Tenon", "Ewma", "Sum8", "Surface", "Emit", "Legacy", "Examples", "KernelFindings", "difftest", "benchgen", "pygen", "fpcheck"]
+defaultTargets = ["Tenon", "Ewma", "Sum8", "Surface", "SurfaceExamples", "Emit", "Legacy", "Examples", "KernelFindings", "difftest", "benchgen", "pygen", "fpcheck"]
 
 [[lean_lib]]
 name = "Tenon"
@@ -12,6 +12,9 @@ name = "Sum8"
 
 [[lean_lib]]
 name = "Surface"
+
+[[lean_lib]]
+name = "SurfaceExamples"
 
 [[lean_lib]]
 name = "Emit"

@@ -1,3 +1,4 @@
+import Lean
 /-! Tenon = K4 plus floating point: `f64` scalars and slices, float expressions (`FExpr`), and the
     statements that assign, store, declare and compare them. Float operations are Lean's `Float`
     (IEEE-754 binary64); they are never stuck, so the only obligations they add are index bounds.
@@ -89,6 +90,9 @@ inductive Stmt where
       -- for i in 0..e { s }: the bound is evaluated once, before the loop
   | loopB  : Nat → (List Val → Nat → List Val → Prop) → Stmt → Stmt
   | loopE  : Expr → (List Val → Nat → List Val → Prop) → Stmt → Stmt
+  | note   : String → Stmt → Stmt
+      -- the statement, labelled with its source text. It runs exactly like the statement; the label is
+      -- carried into the statement's obligations so that a failed proof can say where it comes from.
       -- like loopB, with the proof-only bound given by an expression evaluated at entry (e.g. len(a) + 1)
       -- loop { s } that must leave by `brk` within n iterations. n and the iteration number exist only
       -- for the proof: the body does not see a counter, and the generated code has none.
@@ -336,6 +340,7 @@ def execS (callee : Nat → List Val → Option (Int × List Val)) (Γ : List Ty
   | .loopB n _ s, env => match loopBrk (fun env => execS callee Γ s env) n env with
     | some env' => some (.norm env')
     | none => none
+  | .note _ s, env => execS callee Γ s env
   | .loopE e _ s, env => match evalE e env with
     | some n => match loopBrk (fun env => execS callee Γ s env) n.toNat env with
       | some env' => some (.norm env')
@@ -390,6 +395,7 @@ def mods : Stmt → Nat → Bool
   | .call _ args dst, i => dst == i || args.any (fun a => a.2 && a.1 == i)
   | .loopB _ _ s, i => mods s i
   | .loopE _ _ s, i => mods s i
+  | .note _ s, i => mods s i
   | .forE _ _ s, i => mods s (i + 1)
   | .fassign x _, i => x == i
   | .fstore a _ _, i => a == i
@@ -662,6 +668,11 @@ theorem exec_frame (callee : Nat → List Val → Option (Int × List Val)) (s :
       simp at h; subst h
       exact loopBrk_frame _ i (fun e o hk => ihs Γ e o i hk hm) n env env' hl
     next => simp at h
+  | note t s ihs =>
+    intro Γ env o i h hm
+    simp [mods] at hm
+    simp only [execS] at h
+    exact ihs Γ env o i h hm
   | loopE e I s ihs =>
     intro Γ env o i h hm
     simp [mods] at hm
@@ -898,6 +909,10 @@ theorem exec_lens (callee : Nat → List Val → Option (Int × List Val)) (hc :
       simp at h; subst h
       exact loopBrk_lens _ (fun e o hk => ihs Γ e o hk) n env env' hl
     next => simp at h
+  | note t s ihs =>
+    intro Γ env o h
+    simp only [execS] at h
+    exact ihs Γ env o h
   | loopE e I s ihs =>
     intro Γ env o h
     simp only [execS] at h
@@ -997,6 +1012,14 @@ def wpF (Γ : List Ty) : FExpr → List Val → (Float → Prop) → Prop
   | .selLe a b t e, env, Q => wpF Γ a env (fun x => wpF Γ b env (fun y => wpF Γ t env (fun u =>
       wpF Γ e env (fun v => Q (if x ≤ y then u else v)))))
 
+/-- A label in the context of an obligation: always true, never unfolded by the tactics. It records
+    which source statement an obligation comes from. -/
+def Tag (_ : String) : Prop := True
+
+theorem Tag.intro (s : String) : Tag s := trivial
+
+attribute [irreducible] Tag
+
 def popped (Q : List Val → Prop) : List Val → Prop
   | _ :: e3 => Q e3
   | [] => False
@@ -1046,6 +1069,7 @@ def wpS (rest : List Fn) (Γ : List Ty) : Stmt → List Val → (List Val → Pr
         I env i env' →
         wpS rest (.int 0 9223372036854775807 :: Γ) s (.int i :: env') (popped (I env (i + 1))) (popped Q)) ∧
       (∀ env', hasAll Γ env' = true → sameAt (kept Γ s) env env' → lens env' = lens env → I env nv.toNat env' → Q env'))
+  | .note t s, env, Q, B => Tag t → wpS rest Γ s env Q B
   | .loopE e I s, env, Q, _ => wpE Γ e env (fun nv => I env 0 env ∧
       (∀ (i : Nat) env', i < nv.toNat → hasAll Γ env' = true → sameAt (keptB Γ s) env env' → lens env' = lens env →
         I env i env' → wpS rest Γ s env' (I env (i + 1)) Q) ∧
@@ -1625,6 +1649,10 @@ theorem wpS_sound (rest : List Fn) (callee : Nat → List Val → Option (Int ×
       n 0 env (by omega) ⟨⟨hΓ, fun _ _ => rfl, rfl⟩, h0⟩
     obtain ⟨env', hl, hq⟩ := this
     exact ⟨.norm env', by simp [execS, hl], hq⟩
+  | note t s ihs =>
+    intro Γ env Q B hΓ h
+    obtain ⟨o, ho, hs⟩ := ihs Γ env Q B hΓ (h (Tag.intro t))
+    exact ⟨o, by simp [execS, ho], hs⟩
   | loopE e I s ihs =>
     intro Γ env Q B hΓ h
     obtain ⟨nv, hnv, h0, hstep, hend⟩ := wpE_sound Γ env hΓ e _ h
@@ -1768,6 +1796,147 @@ macro "env_open" h:ident : tactic =>
         | (apply open_fslice; intro _ _ heq _; subst heq))
       apply open_nil; intro heq; subst heq))
 
+open Lean Elab Tactic Meta in
+/-- Like `env_open`, but the values get the names of the source variables when the context contains a
+    label (`Tag "@pos|n0,n1,..."`, newest label wins) whose name list fits. Names only make failed
+    obligations readable; they change nothing in what is proved. -/
+elab "env_open_tagged" h:ident : tactic => withMainContext do
+  let lctx ← getLCtx
+  let mut names : List String := []
+  for d in lctx do
+    let t ← instantiateMVars d.type
+    if t.isAppOfArity ``Tenon.Tag 1 then
+      if let .lit (.strVal str) := t.appArg! then
+        names := ((str.splitOn "|").getD 1 "").splitOn ","
+  evalTactic (← `(tactic| revert $h))
+  for n in names do
+    if n.isEmpty then continue
+    let id := mkIdent (Name.mkSimple n)
+    evalTactic (← `(tactic| first
+      | (apply open_int; intro $id:ident _ heq _ _; subst heq)
+      | (apply open_arr; intro $id:ident _ heq _ _; subst heq)
+      | (apply open_slice; intro $id:ident _ heq _ _; subst heq)
+      | (apply open_flt; intro $id:ident _ heq; subst heq)
+      | (apply open_fslice; intro $id:ident _ heq _; subst heq)
+      | skip))
+  evalTactic (← `(tactic| repeat (first
+      | (apply open_int; intro _ _ heq _ _; subst heq)
+      | (apply open_arr; intro _ _ heq _ _; subst heq)
+      | (apply open_slice; intro _ _ heq _ _; subst heq)
+      | (apply open_flt; intro _ _ heq; subst heq)
+      | (apply open_fslice; intro _ _ heq _; subst heq))))
+  evalTactic (← `(tactic| (apply open_nil; intro heq; subst heq)))
+
+/-! ### Products of two bounded integers (price times quantity)
+    The arithmetic procedure is linear. For a product of two variables it needs the product's bounds as
+    a fact; this lemma and tactic supply them from the constant bounds of the factors. -/
+
+theorem mul_abs_bound (a b A B : Int) (ha : -A ≤ a ∧ a ≤ A) (hb : -B ≤ b ∧ b ≤ B) :
+    -(A * B) ≤ a * b ∧ a * b ≤ A * B := by
+  have hA : (a.natAbs : Int) ≤ A := by omega
+  have hB : (b.natAbs : Int) ≤ B := by omega
+  have hA0 : 0 ≤ A := by omega
+  have hm : ((a * b).natAbs : Int) = (a.natAbs : Int) * (b.natAbs : Int) := by
+    rw [Int.natAbs_mul]; simp
+  have hle : (a.natAbs : Int) * (b.natAbs : Int) ≤ A * B :=
+    Int.mul_le_mul hA hB (by omega) hA0
+  have h12 : -((a * b).natAbs : Int) ≤ a * b ∧ a * b ≤ ((a * b).natAbs : Int) := by omega
+  omega
+
+open Lean Elab Tactic Meta in
+/-- For every product of two non-constant integer terms in the goal whose factors have constant bounds
+    among the hypotheses, add the bound of the product. Fails if it adds nothing. -/
+elab "mul_bounds" : tactic => withMainContext do
+  let goal ← getMainGoal
+  let tgt ← instantiateMVars (← goal.getType)
+  let lctx ← getLCtx
+  -- constant bounds of a term: (lower, upper)
+  let boundsOf (e : Lean.Expr) : MetaM (Option Int × Option Int) := do
+    let mut lo : Option Int := none
+    let mut hi : Option Int := none
+    for d in lctx do
+      let t ← instantiateMVars d.type
+      if t.isAppOfArity ``LE.le 4 then
+        let l := t.getArg! 2
+        let r := t.getArg! 3
+        if r == e then
+          if let some n := l.int? then lo := some (match lo with | some m => max m n | none => n)
+        if l == e then
+          if let some n := r.int? then hi := some (match hi with | some m => min m n | none => n)
+    return (lo, hi)
+  -- collect products
+  let prods : IO.Ref (Array (Lean.Expr × Lean.Expr)) ← IO.mkRef #[]
+  let _ ← Meta.transform tgt (pre := fun e => do
+    if e.isAppOfArity ``HMul.hMul 6 then
+      let a := e.getArg! 4
+      let b := e.getArg! 5
+      if a.int?.isNone && b.int?.isNone && (← inferType e).isConstOf ``Int then
+        prods.modify (fun ps => if ps.contains (a, b) then ps else ps.push (a, b))
+    return .continue)
+  let mut added := 0
+  for (a, b) in (← prods.get) do
+    let (la, ua) ← boundsOf a
+    let (lb, ub) ← boundsOf b
+    match la, ua, lb, ub with
+    | some la, some ua, some lb, some ub =>
+      let A : Int := max la.natAbs ua.natAbs
+      let B : Int := max lb.natAbs ub.natAbs
+      let sa ← Term.exprToSyntax a
+      let sb ← Term.exprToSyntax b
+      let sA := Syntax.mkNumLit (toString A.toNat)
+      let sB := Syntax.mkNumLit (toString B.toNat)
+      evalTactic (← `(tactic| have := mul_abs_bound $sa $sb $sA $sB (by omega) (by omega)))
+      added := added + 1
+    | _, _, _, _ => pure ()
+  if added == 0 then throwError "mul_bounds: no product with constant bounds found"
+
+/-! ### Division by a variable (a mean: a sum divided by a length) -/
+
+theorem div_bound (a b c : Int) (ha : 0 ≤ a) (hb : 0 < b) (h : a ≤ c * b) : 0 ≤ a / b ∧ a / b ≤ c :=
+  ⟨Int.ediv_nonneg ha (by omega), Int.ediv_le_of_le_mul hb h⟩
+
+theorem div_self_bound (a b : Int) (ha : 0 ≤ a) (hb : 0 < b) : 0 ≤ a / b ∧ a / b ≤ a :=
+  ⟨Int.ediv_nonneg ha (by omega), Int.ediv_le_self b ha⟩
+
+open Lean Elab Tactic Meta in
+/-- For every quotient `a / b` in the goal with a non-constant divisor, add `0 ≤ a / b ≤ c` when a
+    hypothesis `a ≤ c * b` with a constant `c` exists, else `0 ≤ a / b ≤ a`. Fails if it adds nothing. -/
+elab "div_bounds" : tactic => withMainContext do
+  let goal ← getMainGoal
+  let tgt ← instantiateMVars (← goal.getType)
+  let lctx ← getLCtx
+  let quots : IO.Ref (Array (Lean.Expr × Lean.Expr)) ← IO.mkRef #[]
+  let _ ← Meta.transform tgt (pre := fun e => do
+    if e.isAppOfArity ``HDiv.hDiv 6 then
+      let a := e.getArg! 4
+      let b := e.getArg! 5
+      if b.int?.isNone && (← inferType e).isConstOf ``Int then
+        quots.modify (fun ps => if ps.contains (a, b) then ps else ps.push (a, b))
+    return .continue)
+  let mut added := 0
+  for (a, b) in (← quots.get) do
+    let sa ← Term.exprToSyntax a
+    let sb ← Term.exprToSyntax b
+    let mut c : Option Int := none
+    for d in lctx do
+      let t ← instantiateMVars d.type
+      if t.isAppOfArity ``LE.le 4 && t.getArg! 2 == a then
+        let r := t.getArg! 3
+        if r.isAppOfArity ``HMul.hMul 6 && r.getArg! 5 == b then
+          if let some n := (r.getArg! 4).int? then
+            c := some (match c with | some m => min m n | none => n)
+    try
+      match c with
+      | some n =>
+        let sc := Syntax.mkNumLit (toString n.toNat)
+        if n < 0 then throwError "negative bound"
+        evalTactic (← `(tactic| have := div_bound $sa $sb $sc (by omega) (by omega) (by omega)))
+      | none =>
+        evalTactic (← `(tactic| have := div_self_bound $sa $sb (by omega) (by omega)))
+      added := added + 1
+    catch _ => pure ()
+  if added == 0 then throwError "div_bounds: no quotient with a provable bound found"
+
 macro "vc_leaves" : tactic =>
   `(tactic| repeat' (first | (intro _) | omega | (apply And.intro) | assumption | (with_reducible rfl) |
       (simp [inI64]; done) | (simp only [inI64]; omega) | constructor))
@@ -1797,7 +1966,7 @@ syntax "kvc_open" ident ident ident "[" Lean.Parser.Tactic.simpLemma,* "]" : tac
 macro_rules
   | `(tactic| kvc_open $hΓ:ident $hsame:ident $hlens:ident [$defs,*]) =>
     `(tactic| (
-        env_open $hΓ
+        env_open_tagged $hΓ
         try simp [sameAt, kept, keptB, mods, List.range, List.range.loop, List.filter] at $hsame:ident
         try simp [lens, shape] at $hlens:ident
         (repeat cases ‹_ ∧ _›)
@@ -1814,13 +1983,15 @@ macro_rules
     `(tactic| (
         intro args hin hreq hpre
         simp only [$f:ident, List.map] at hin
-        env_open hin
+        env_open_tagged hin
         try simp [$f:ident, evalC, evalCT] at hreq
         try simp [$f:ident, geti, leni, $defs,*] at hpre
         simp [$f:ident, wpS, wpE, wpF, popped, inI64, geti, leni, exclusive, argsTyped, lookups, hasAll, Val.has,
           evalC, evalCT, $defs,*]
         repeat' (first
           | omega
+          | (mul_bounds; omega)
+          | (div_bounds; omega)
           | apply And.intro
           | (intro (_ : _ ≤ _))
           | (intro (_ : _ < _))

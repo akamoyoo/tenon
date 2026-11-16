@@ -1,0 +1,14 @@
+fn lower_bound(a: slice(-1000000000, 1000000000), p: int(-1000000000, 1000000000))
+    -> int(0, 9223372036854775807)
+  requires (len(a) <= 1000000000000)
+{
+  let lo: int(0, 9223372036854775807) = 0;
+  let hi: int(0, 9223372036854775807) = len(a);
+  loop upto len(a) + 1 invariant (lo <= hi && hi <= len(a) && hi - lo <= len(a) - iter_) {
+    if hi <= lo { break; } else {
+      let mid: int(0, 9223372036854775807) = lo + (hi - lo) / 2;
+      if a[mid] < p { lo = mid + 1; } else { hi = mid; }
+    }
+  }
+  result = lo;
+}

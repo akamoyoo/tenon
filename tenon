@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+"""tenon: check a Tenon source file.
+
+    tenon check FILE.tn        prove every function in FILE.tn; print what could not be proved
+    tenon check -a FILE.tn     print every obligation that could not be proved, not only the first of
+                               each function (the later ones often follow from the first)
+    tenon check -v FILE.tn     also print the raw output of the proof checker for failures
+    tenon emit FILE.tn         check, and if every function is proved, print the C for the file
+
+A .tn file contains functions and nothing else:
+
+    fn name(params) -> int(lo, hi)
+      requires (condition)
+      uses [callee, ...]            (optional)
+    {
+      statements
+    }
+
+The check is done by Lean: this command writes a Lean file that contains the functions and one theorem
+per function, runs Lean on it, and translates what comes back. Nothing here is trusted: a function is
+accepted only if Lean accepted its theorem.
+"""
+import os, re, subprocess, sys
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+I64MAX, I64MIN = '9223372036854775807', '-9223372036854775808'
+
+
+def functions(src):
+    """[(name, [callees], line)] in order of appearance."""
+    out = []
+    for m in re.finditer(r'^fn\s+([A-Za-z_][A-Za-z_0-9]*)\s*\(', src, re.M):
+        head = src[m.start():src.index('{', m.start())] if '{' in src[m.start():] else ''
+        u = re.search(r'\buses\s*\[([^\]]*)\]', head)
+        callees = [c.strip() for c in u.group(1).split(',') if c.strip()] if u else []
+        out.append((m.group(1), callees, src.count('\n', 0, m.start()) + 1))
+    return out
+
+
+HEADER = 'import Surface import Emit\n'          # one line: a line of the source is line + 1 of the generated file
+
+
+def generate(src, fns):
+    body = re.sub(r'^fn(\s)', r'kfn\1', src, flags=re.M)     # same length of lines: positions map by line
+    lean = HEADER + body
+    if not lean.endswith('\n'):
+        lean += '\n'
+    thm_line = {}
+    params = {}
+    for m in re.finditer(r'^fn\s+([A-Za-z_][A-Za-z_0-9]*)\s*\((.*?)\)\s*->', src, re.M | re.S):
+        params[m.group(1)] = re.findall(r'([A-Za-z_][A-Za-z_0-9]*)\s*:', m.group(2))
+    for name, callees, _ in fns:
+        cs = ', '.join(callees)
+        thm_line[lean.count('\n') + 2] = name                # the line of `theorem`
+        lean += (f'\nopen Tenon in\ntheorem {name}_ok : FnOk [{cs}] {name} := by\n'
+                 f'  have _args : Tag "@0|{",".join(params[name])}" := Tag.intro _\n  kvc {name} [{cs}]\n')
+    order = ', '.join(n for n, _, _ in reversed(fns))        # a program lists its functions newest first
+    starts = [m.start() for m in re.finditer(r'^fn\s', src, re.M)] + [len(src)]
+    local = {}
+    for k, (n, _, _) in enumerate(fns):                      # names of locals and counters, in source order
+        text = src[starts[k]:starts[k + 1]]
+        local[n] = [a or b for a, b in re.findall(r'\blet\s+([A-Za-z_]\w*)\s*:|\bfor\s+([A-Za-z_]\w*)\s+upto', text)]
+    def q(xs):
+        return ', '.join('"%s"' % x for x in xs)
+    names = ', '.join('{ name := "%s", params := [%s], locals := [%s] }' % (n, q(params[n]), q(local[n]))
+                      for n, _, _ in reversed(fns))
+    emit = ('\nopen Tenon Tenon.Emit in\n#eval match emitProgram {} [' + order + '] [' + names + '] with\n'
+            '  | .ok c => IO.println ("//TENON-C-BEGIN\\n" ++ c ++ "\\n//TENON-C-END")\n'
+            '  | .error e => IO.println ("TENON-EMIT-ERROR " ++ e)\n')
+    return lean, thm_line, emit
+
+
+def messages(out):
+    """Split Lean's output into (line, col, kind, text)."""
+    msgs, cur = [], None
+    for line in out.splitlines():
+        m = re.match(r'^[^:\s]+\.lean:(\d+):(\d+): (error|warning|info)(?:\([^)]*\))?: ?(.*)$', line)
+        if m:
+            cur = [int(m.group(1)), int(m.group(2)), m.group(3), m.group(4)]
+            msgs.append(cur)
+        elif cur is not None:
+            cur[3] += '\n' + line
+    return msgs
+
+
+def goals(text):
+    """The goals of an 'unsolved goals' message: [(hypotheses, goal)]."""
+    res, hyps, goal = [], [], None
+    for line in text.splitlines()[1:]:
+        if line.startswith('case '):
+            if goal is not None:
+                res.append((hyps, goal))
+            hyps, goal = [], None
+        elif line.startswith('⊢'):
+            goal = line[1:].strip()
+        elif goal is not None and line.startswith(' '):
+            goal += ' ' + line.strip()
+        elif goal is None:
+            if line.startswith(' ') and hyps:
+                hyps[-1] += ' ' + line.strip()
+            else:
+                hyps.append(line)
+        else:                                                # a new goal without a `case` line
+            res.append((hyps, goal))
+            hyps, goal = [line], None
+    if goal is not None:
+        res.append((hyps, goal))
+    return res
+
+
+SUP = str.maketrans('⁰¹²³⁴⁵⁶⁷⁸⁹', '0123456789')
+
+
+def rename(hyps, goal, names):
+    """Give the values of the variables in scope their source names. Lean lists the hypotheses in the
+    order they were introduced; the values of the innermost environment are the last variables named
+    x (integers, floats) or l (arrays) that were introduced, in the order of the scope. If their number
+    does not match the scope, nothing is renamed."""
+    decl = []
+    for h in hyps:
+        m = re.match(r'^((?:[xl]✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*\s*)+):\s*(Int|Float|List Int|List Float)\s*$', h)
+        if m:
+            decl += m.group(1).split()
+    if not names or len(decl) < len(names):
+        return goal, False
+    mapping = dict(zip(decl[-len(names):], names))
+    def sub(m):
+        return mapping.get(m.group(0), m.group(0))
+    g = re.sub(r'[xl]✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', sub, goal)
+    g = re.sub(r'↑?([A-Za-z_][A-Za-z_0-9]*)\.length', r'len(\1)', g)
+    g = g.replace('↑', '')
+    return g, True
+
+
+def pretty(goal):
+    g = goal.replace(I64MIN, 'INT64_MIN').replace(I64MAX, 'INT64_MAX')
+    g = re.sub(r'i✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', '<iteration>', g)
+    g = re.sub(r'v✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', '<element>', g)
+    return g.replace('∧', '&&').replace('≤', '<=').replace('≥', '>=').replace('¬', 'not ')
+
+
+def kind(goal):
+    if re.search(r'≤ ' + I64MAX + r'$', goal) or goal.startswith(I64MIN + ' ≤'):
+        return 'cannot show that this value stays within 64 bits'
+    return 'cannot show'
+
+
+def main():
+    args = [a for a in sys.argv[1:] if a not in ('-v', '-a')]
+    verbose = '-v' in sys.argv
+    show_all = '-a' in sys.argv
+    if len(args) != 2 or args[0] not in ('check', 'emit'):
+        sys.exit(__doc__)
+    path = args[1]
+    src = open(path).read()
+    src_lines = src.splitlines()
+    fns = functions(src)
+    if not fns:
+        sys.exit(f'{path}: no function found (a function starts with `fn name(` at the start of a line)')
+    lean, thm_line, emit_cmd = generate(src, fns)
+    if args[0] == 'emit':
+        lean += emit_cmd
+    work = os.path.join(ROOT, '.lake', 'tenon-check')
+    os.makedirs(work, exist_ok=True)
+    gen = os.path.join(work, 'Check.lean')
+    open(gen, 'w').write(lean)
+    lean_bytes = lean.encode()
+    env = dict(os.environ, PATH=os.path.expanduser('~/.elan/bin') + os.pathsep + os.environ.get('PATH', ''))
+    b = subprocess.run(['lake', 'build', 'Surface', 'Emit'], cwd=ROOT, env=env, capture_output=True, text=True)
+    if b.returncode != 0:
+        sys.exit('tenon: the language itself failed to build:\n' + b.stdout[-2000:] + b.stderr[-2000:])
+    p = subprocess.run(['lake', 'env', 'lean', gen], cwd=ROOT, env=env, capture_output=True, text=True)
+    msgs = [m for m in messages(p.stdout + p.stderr) if m[2] == 'error']
+    n_src = lean.count('\n', 0, len(HEADER) + len(src)) + 1
+    failed, shown = set(), 0
+
+    def src_line_of_pos(pos):
+        return lean_bytes[:pos].count(b'\n')                 # generated line - 1 = source line
+
+    for line, col, _, text in msgs:
+        name = None
+        for tl in sorted(thm_line):
+            if tl <= line:
+                name = thm_line[tl]
+        if name is None or line < min(thm_line):             # an error in the functions themselves
+            sl = line - 1
+            first = text.splitlines()[0]
+            code = src_lines[sl - 1].strip() if 0 < sl <= len(src_lines) else ''
+            print(f'{path}:{sl}:{col + 1}: error: {first}\n    {code}')
+            shown += 1
+            for fname, _, fl in fns:
+                if fl <= sl:
+                    cur = fname
+            failed.add(cur if fns and fns[0][2] <= sl else '?')
+            continue
+        failed.add(name)
+        if not text.startswith('unsolved goals'):
+            print(f'{path}: in `{name}`: {text.splitlines()[0]}')
+            shown += 1
+            continue
+        gs = goals(text)
+        for gi, (hyps, goal) in enumerate(gs):
+            if gi > 0 and not show_all:
+                print(f'    ({len(gs) - 1} more obligation(s) of `{name}` not shown; they often follow from the first. '
+                      f'`tenon check -a` shows all.)')
+                break
+            tag = None
+            for h in hyps:
+                m = re.search(r'Tag "@(\d+)\|([^"|]*)(\|inv)?"', h)
+                if m:
+                    tag = m
+            if tag:
+                sl = src_line_of_pos(int(tag.group(1)))
+                names = [n for n in tag.group(2).split(',') if n]
+                g = goal if '✝' not in re.sub(r'[iv]✝', '', goal) else rename(hyps, goal, names)[0]
+                g = re.sub(r'↑?([A-Za-z_][A-Za-z_0-9]*)\.length', r'len(\1)', g).replace('↑', '')
+                code = src_lines[sl - 1].strip() if 0 < sl <= len(src_lines) else ''
+                counter = 'iter_'
+                for back in range(sl - 1, -1, -1):           # the nearest loop above this line
+                    lm = re.match(r'\s*(?:for\s+([A-Za-z_][A-Za-z_0-9]*)\s+upto|loop\b)', src_lines[back])
+                    if lm:
+                        counter = lm.group(1) or 'iter_'
+                        break
+                g = re.sub(r'i✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', counter, g)
+                what = kind(goal)
+                if tag.group(3):
+                    what = 'cannot show that the invariant of this loop holds again after an iteration'
+                elif code.startswith('loop') and what == 'cannot show':
+                    what = ('cannot show that this loop leaves by `break` within its bound '
+                            '(or that its invariant holds on entry)')
+                elif code.startswith('for') and what == 'cannot show':
+                    what = 'cannot show that the invariant of this loop holds on entry'
+                print(f'{path}:{sl}: in `{name}`: {what}\n    {code}\n    needed: {pretty(g)}')
+            else:
+                print(f'{path}: in `{name}`: {kind(goal)}\n    needed: {pretty(goal)}   (values shown with internal names)')
+            shown += 1
+        if verbose:
+            print(text)
+    ok = [n for n, _, _ in fns if n not in failed]
+    log = sys.stderr if args[0] == 'emit' else sys.stdout
+    for n in ok:
+        print(f'{path}: `{n}`: proved', file=log)
+    if failed:
+        print(f'{len(failed)} of {len(fns)} function(s) not proved' + ('; no C written' if args[0] == 'emit' else ''),
+              file=log)
+        sys.exit(1)
+    print(f'{len(fns)} function(s) proved', file=log)
+    if args[0] == 'emit':
+        out = p.stdout
+        if 'TENON-EMIT-ERROR' in out:
+            sys.exit('tenon: ' + out[out.index('TENON-EMIT-ERROR') + 17:].splitlines()[0])
+        if '//TENON-C-BEGIN' not in out:
+            sys.exit('tenon: the generator produced no output')
+        print(out[out.index('//TENON-C-BEGIN') + 16:out.index('//TENON-C-END')].rstrip())
+
+
+if __name__ == '__main__':
+    main()

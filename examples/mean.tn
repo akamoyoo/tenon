@@ -1,0 +1,9 @@
+fn mean(x: slice(-1000000000, 1000000000)) -> int(-1000000000, 1000000000)
+  requires (1 <= len(x) && len(x) <= 1000000)
+{
+  let s: int(0, 2000000000000000) = 0;
+  for i upto len(x) invariant (0 <= s && s <= 2000000000 * i) {
+    s = s + (x[i] + 1000000000);
+  }
+  result = s / len(x) - 1000000000;
+}

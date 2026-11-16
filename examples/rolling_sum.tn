@@ -1,0 +1,10 @@
+fn rolling_sum(x: slice(-1000000000, 1000000000), w: int(1, 1000000),
+               out: inout slice(-9223372036854775807, 9223372036854775807)) -> int(0, 0)
+  requires (len(x) == len(out) && len(x) <= 1000000)
+{
+  let acc: int(-2000000000000000, 2000000000000000) = 0;
+  for i upto len(x) invariant (-2000000000 * i <= acc && acc <= 2000000000 * i) {
+    if w <= i { acc = acc + x[i] - x[i - w]; } else { acc = acc + x[i]; }
+    out[i] = acc;
+  }
+}

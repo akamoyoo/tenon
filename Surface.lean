@@ -8,7 +8,7 @@ import Tenon
         requires (len(x) == len(out) && len(x) <= 1000000)
       {
         let acc: int(-1000000000000000, 1000000000000000) = 0;
-        for i upto len(x) invariant (-1000000000 * i ≤ acc ∧ acc ≤ 1000000000 * i) {
+        for i upto len(x) invariant (-1000000000 * i <= acc && acc <= 1000000000 * i) {
           acc = acc + x[i];
           out[i] = acc;
         }
@@ -44,23 +44,6 @@ syntax "slice" "(" term "," term ")" : kty
 syntax "f64" : kty
 syntax "fslice" : kty
 
-declare_syntax_cat ks
-syntax "let " ident ":" "int" "(" term "," term ")" " = " kx ";" : ks
-syntax "let " ident ":" "f64" " = " kx ";" : ks
-syntax ident " = " kx ";" : ks
-syntax ident "[" kx "]" " = " kx ";" : ks
-syntax "if " kx " <= " kx " {" ks* "}" " else " "{" ks* "}" : ks
-syntax "if " kx " < " kx " {" ks* "}" " else " "{" ks* "}" : ks
-syntax "for " ident " upto " kx " invariant " "(" term ")" " {" ks* "}" : ks
-syntax "loop " "bound " num " invariant " "(" term ")" " {" ks* "}" : ks
-syntax "loop " "upto " kx " invariant " "(" term ")" " {" ks* "}" : ks
-declare_syntax_cat karg
-syntax ident : karg
-syntax "inout " ident : karg
-syntax ident " = " "call" "[" num "]" "(" karg,* ")" ";" : ks
-syntax ident " = " ident "(" karg,* ")" ";" : ks
-syntax "break" ";" : ks
-
 declare_syntax_cat kct
 syntax num : kct
 syntax ident : kct
@@ -69,13 +52,36 @@ syntax:65 kct:65 " + " kct:66 : kct
 syntax:65 kct:65 " - " kct:66 : kct
 syntax:70 kct:70 " * " kct:71 : kct
 syntax "(" kct ")" : kct
+syntax:75 "-" kct:75 : kct
 
 declare_syntax_cat kc
 syntax "always" : kc
 syntax kct " <= " kct : kc
 syntax kct " < " kct : kc
 syntax kct " == " kct : kc
+syntax kct " >= " kct : kc
+syntax kct " > " kct : kc
 syntax:35 kc:36 " && " kc:35 : kc
+
+declare_syntax_cat ks
+syntax "let " ident ":" "int" "(" term "," term ")" " = " kx ";" : ks
+syntax "let " ident ":" "f64" " = " kx ";" : ks
+syntax ident " = " kx ";" : ks
+syntax ident "[" kx "]" " = " kx ";" : ks
+syntax "if " kx " <= " kx " {" ks* "}" " else " "{" ks* "}" : ks
+syntax "if " kx " < " kx " {" ks* "}" " else " "{" ks* "}" : ks
+declare_syntax_cat kinvc
+syntax " invariant " "(" kc ")" : kinvc
+syntax " invariant_lean " "(" term ")" : kinvc
+syntax "for " ident " upto " kx kinvc " {" ks* "}" : ks
+syntax "loop " "bound " num kinvc " {" ks* "}" : ks
+syntax "loop " "upto " kx kinvc " {" ks* "}" : ks
+declare_syntax_cat karg
+syntax ident : karg
+syntax "inout " ident : karg
+syntax ident " = " "call" "[" num "]" "(" karg,* ")" ";" : ks
+syntax ident " = " ident "(" karg,* ")" ";" : ks
+syntax "break" ";" : ks
 
 declare_syntax_cat kparam
 syntax ident ":" kty : kparam
@@ -185,20 +191,69 @@ def mkInv (sc : Scope) (it : Name) (p : TSyntax `term) : MacroM (TSyntax `term) 
     let nlen := mkIdent (sc[k].1.appendAfter "_len")
     body ← `(let $n : Int := Tenon.geti env $(quote k); let $nlen : Int := Tenon.leni env $(quote k); $body)
   let itId := mkIdent it
-  `(fun (_env0 : List Tenon.Val) (iter : Nat) (env : List Tenon.Val) => let $itId : Int := (iter : Int); $body)
+  let iterId := mkIdent (Name.mkSimple "iter_")
+  `(fun (_env0 : List Tenon.Val) (iter : Nat) (env : List Tenon.Val) =>
+      let $iterId : Int := (iter : Int); let $itId : Int := (iter : Int); $body)
+
+/-- A term of an invariant, as a Lean integer term over the names bound by `mkInv`. -/
+partial def trInvT (e : TSyntax `kct) : MacroM (TSyntax `term) := do
+  match e with
+  | `(kct| $n:num) => `(($n : Int))
+  | `(kct| $x:ident) => `($x)
+  | `(kct| len($x)) => pure (mkIdent (x.getId.appendAfter "_len"))
+  | `(kct| $a + $b) => do `($(← trInvT a) + $(← trInvT b))
+  | `(kct| $a - $b) => do `($(← trInvT a) - $(← trInvT b))
+  | `(kct| $a * $b) => do `($(← trInvT a) * $(← trInvT b))
+  | `(kct| - $a) => do `(- $(← trInvT a))
+  | `(kct| ($a)) => do `(($(← trInvT a)))
+  | _ => Macro.throwErrorAt e "unsupported term in an invariant"
+
+partial def trInvC (c : TSyntax `kc) : MacroM (TSyntax `term) := do
+  match c with
+  | `(kc| always) => `(True)
+  | `(kc| $a:kct <= $b:kct) => do `($(← trInvT a) ≤ $(← trInvT b))
+  | `(kc| $a:kct < $b:kct) => do `($(← trInvT a) < $(← trInvT b))
+  | `(kc| $a:kct == $b:kct) => do `($(← trInvT a) = $(← trInvT b))
+  | `(kc| $a:kct >= $b:kct) => do `($(← trInvT b) ≤ $(← trInvT a))
+  | `(kc| $a:kct > $b:kct) => do `($(← trInvT b) < $(← trInvT a))
+  | `(kc| $a:kc && $b:kc) => do `($(← trInvC a) ∧ $(← trInvC b))
+  | _ => Macro.throwErrorAt c "unsupported condition in an invariant"
+
+/-- The invariant clause of a loop, in either form. -/
+def trInvClause (sc : Scope) (it : Name) (c : TSyntax `kinvc) : MacroM (TSyntax `term) := do
+  match c with
+  | `(kinvc| invariant ($p:kc)) => do mkInv sc it (← trInvC p)
+  | `(kinvc| invariant_lean ($p:term)) => mkInv sc it p
+  | _ => Macro.throwErrorAt c "unsupported invariant clause"
+
+/-- The label of a statement: its byte position in the file. The `tenon` command turns the position into
+    a line of the source file and prints that line. -/
+def label (sc : Scope) (s : Syntax) : TSyntax `term :=
+  let pos := match s.getPos? with | some p => p.byteIdx | none => 0
+  let names := ",".intercalate (sc.toList.map (fun p => toString p.1))
+  quote s!"@{pos}|{names}"
+
+/-- The body of a loop, followed by a labelled no-op: the obligation "the invariant holds again" then
+    carries a label that says so. -/
+def withInvNote (sc : Scope) (loopStx : Syntax) (body : TSyntax `term) : MacroM (TSyntax `term) := do
+  let pos := match loopStx.getPos? with | some p => p.byteIdx | none => 0
+  let names := ",".intercalate (sc.toList.map (fun p => toString p.1))
+  let lbl : TSyntax `term := quote s!"@{pos}|{names}|inv"
+  `(Tenon.Stmt.seq $body (Tenon.Stmt.note $lbl Tenon.Stmt.skip))
 
 /-- A block: a `let` scopes over the statements after it. -/
 partial def trBlock (callees : Array Name) (sc : Scope) (ss : List (TSyntax `ks)) : MacroM (TSyntax `term) := do
   match ss with
   | [] => `(Tenon.Stmt.skip)
   | s :: rest =>
+    let lbl := label sc s
     let seq (t : TSyntax `term) : MacroM (TSyntax `term) := do
-      if rest.isEmpty then pure t else `(Tenon.Stmt.seq $t $(← trBlock callees sc rest))
+      if rest.isEmpty then `(Tenon.Stmt.note $lbl $t) else `(Tenon.Stmt.seq (Tenon.Stmt.note $lbl $t) $(← trBlock callees sc rest))
     match s with
     | `(ks| let $x:ident : int($lo, $hi) = $e ;) =>
-        `(Tenon.Stmt.decl $lo $hi $(← trI sc e) $(← trBlock callees (#[(x.getId, Kind.i)] ++ sc) rest))
+        `(Tenon.Stmt.note $lbl (Tenon.Stmt.decl $lo $hi $(← trI sc e) $(← trBlock callees (#[(x.getId, Kind.i)] ++ sc) rest)))
     | `(ks| let $x:ident : f64 = $e ;) =>
-        `(Tenon.Stmt.fdecl $(← trF sc e) $(← trBlock callees (#[(x.getId, Kind.f)] ++ sc) rest))
+        `(Tenon.Stmt.note $lbl (Tenon.Stmt.fdecl $(← trF sc e) $(← trBlock callees (#[(x.getId, Kind.f)] ++ sc) rest)))
     | `(ks| $x:ident = $e ;) => do
         let (k, kind) ← need sc x
         match kind with
@@ -221,13 +276,13 @@ partial def trBlock (callees : Array Name) (sc : Scope) (ss : List (TSyntax `ks)
           Macro.throwErrorAt s "`<` on floats is not available yet (use `<=`): its meaning on NaN differs from the negation of `<=`"
         else
           seq (← `(Tenon.Stmt.ite $(← trI sc b) $(← trI sc a) $(← trBlock callees sc f.toList) $(← trBlock callees sc t.toList)))
-    | `(ks| for $i:ident upto $e invariant ($p) { $body* }) => do
-        seq (← `(Tenon.Stmt.forE $(← trI sc e) $(← mkInv sc i.getId p)
-                  $(← trBlock callees (#[(i.getId, Kind.i)] ++ sc) body.toList)))
-    | `(ks| loop bound $n:num invariant ($p) { $body* }) => do
-        seq (← `(Tenon.Stmt.loopB $n $(← mkInv sc (Name.mkSimple "iter_") p) $(← trBlock callees sc body.toList)))
-    | `(ks| loop upto $e invariant ($p) { $body* }) => do
-        seq (← `(Tenon.Stmt.loopE $(← trI sc e) $(← mkInv sc (Name.mkSimple "iter_") p) $(← trBlock callees sc body.toList)))
+    | `(ks| for $i:ident upto $e $c:kinvc { $body* }) => do
+        seq (← `(Tenon.Stmt.forE $(← trI sc e) $(← trInvClause sc i.getId c)
+                  $(← withInvNote (#[(i.getId, Kind.i)] ++ sc) s (← trBlock callees (#[(i.getId, Kind.i)] ++ sc) body.toList))))
+    | `(ks| loop bound $n:num $c:kinvc { $body* }) => do
+        seq (← `(Tenon.Stmt.loopB $n $(← trInvClause sc (Name.mkSimple "iter_") c) $(← withInvNote sc s (← trBlock callees sc body.toList))))
+    | `(ks| loop upto $e $c:kinvc { $body* }) => do
+        seq (← `(Tenon.Stmt.loopE $(← trI sc e) $(← trInvClause sc (Name.mkSimple "iter_") c) $(← withInvNote sc s (← trBlock callees sc body.toList))))
     | `(ks| $x:ident = call[$f:num]($args,*) ;) => do
         let (k, kind) ← need sc x
         unless kind == .i do Macro.throwErrorAt x "the destination of a call is an integer variable"
@@ -264,6 +319,7 @@ partial def trCT (sc : Scope) (e : TSyntax `kct) : MacroM (TSyntax `term) := do
   | `(kct| $a - $b) => do `(Tenon.CT.sub $(← trCT sc a) $(← trCT sc b))
   | `(kct| $a * $b) => do `(Tenon.CT.mul $(← trCT sc a) $(← trCT sc b))
   | `(kct| ($a)) => trCT sc a
+  | `(kct| - $a) => do `(Tenon.CT.sub (Tenon.CT.lit 0) $(← trCT sc a))
   | _ => Macro.throwErrorAt e "unsupported term in requires"
 
 partial def trCond (sc : Scope) (c : TSyntax `kc) : MacroM (TSyntax `term) := do
@@ -272,6 +328,8 @@ partial def trCond (sc : Scope) (c : TSyntax `kc) : MacroM (TSyntax `term) := do
   | `(kc| $a:kct <= $b:kct) => do `(Tenon.Cond.le $(← trCT sc a) $(← trCT sc b))
   | `(kc| $a:kct < $b:kct) => do `(Tenon.Cond.lt $(← trCT sc a) $(← trCT sc b))
   | `(kc| $a:kct == $b:kct) => do `(Tenon.Cond.eq $(← trCT sc a) $(← trCT sc b))
+  | `(kc| $a:kct >= $b:kct) => do `(Tenon.Cond.le $(← trCT sc b) $(← trCT sc a))
+  | `(kc| $a:kct > $b:kct) => do `(Tenon.Cond.lt $(← trCT sc b) $(← trCT sc a))
   | `(kc| $a:kc && $b:kc) => do `(Tenon.Cond.and $(← trCond sc a) $(← trCond sc b))
   | _ => Macro.throwErrorAt c "unsupported condition in requires"
 
@@ -311,206 +369,3 @@ macro_rules
           req := $(← trCond psc req)
           pre := fun _ => True
           post := fun _ _ _ => True)
-
-/-! ## The running sum, written in the surface syntax -/
-
-kfn prefix_sum(x: slice(-1000000000, 1000000000), out: inout slice(-1000000000000000, 1000000000000000))
-    -> int(0, 0)
-  requires (len(x) == len(out) && len(x) <= 1000000)
-{
-  let acc: int(-1000000000000000, 1000000000000000) = 0;
-  for i upto len(x) invariant (-1000000000 * i ≤ acc ∧ acc ≤ 1000000000 * i) {
-    acc = acc + x[i];
-    out[i] = acc;
-  }
-}
-
-#eval Tenon.evalFn [prefix_sum] 0 [.arr [1, 2, 3, 4, 5], .arr [0, 0, 0, 0, 0]]
-#eval Tenon.evalFn [prefix_sum] 0 [.arr [1, 2, 3], .arr [0, 0]]
-
-open Tenon in
-theorem prefix_sumOk : FnOk [] prefix_sum := by
-  kvc prefix_sum []
-
-#print axioms prefix_sumOk
-
-/-! ## Two more functions, each proved by the one tactic -/
-
-kfn count_le(x: slice(-1000000000, 1000000000), p: int(-1000000000, 1000000000)) -> int(0, 10000000)
-  requires (len(x) <= 10000000)
-{
-  let cnt: int(0, 10000000) = 0;
-  for i upto len(x) invariant (0 ≤ cnt ∧ cnt ≤ i) {
-    if x[i] <= p { cnt = cnt + 1; } else { }
-  }
-  result = cnt;
-}
-
-open Tenon in
-theorem count_leOk : FnOk [] count_le := by
-  kvc count_le []
-
--- Largest absolute difference between neighbours, a step in many screening rules.
-kfn max_step(x: slice(-1000000000, 1000000000)) -> int(0, 2000000000)
-  requires (always)
-{
-  let best: int(0, 2000000000) = 0;
-  if len(x) < 2 { } else {
-    for i upto len(x) - 1 invariant (0 ≤ best) {
-      let d: int(-2000000000, 2000000000) = x[i + 1] - x[i];
-      if d < 0 { d = 0 - d; } else { }
-      if best < d { best = d; } else { }
-    }
-  }
-  result = best;
-}
-
-open Tenon in
-theorem max_stepOk : FnOk [] max_step := by
-  kvc max_step []
-
-#eval Tenon.evalFn [count_le] 0 [.arr [5, 1, 9, 3, 7], .int 4]
-#eval Tenon.evalFn [max_step] 0 [.arr [5, 1, 9, 3, 7]]
-#eval Tenon.evalFn [max_step] 0 [.arr []]
-#print axioms count_leOk
-#print axioms max_stepOk
-
-/-! ## Binary search over a slice of any length, with no loop counter in the code.
-    `loop upto e` must leave by `break`; `e` and `iter_` exist only for the proof. -/
-
-kfn lower_bound(a: slice(-1000000000, 1000000000), p: int(-1000000000, 1000000000))
-    -> int(0, 9223372036854775807)
-  requires (len(a) <= 1000000000000)
-{
-  let lo: int(0, 9223372036854775807) = 0;
-  let hi: int(0, 9223372036854775807) = len(a);
-  loop upto len(a) + 1 invariant (lo ≤ hi ∧ hi ≤ a_len ∧ hi - lo ≤ a_len - iter_) {
-    if hi <= lo { break; } else {
-      let mid: int(0, 9223372036854775807) = lo + (hi - lo) / 2;
-      if a[mid] < p { lo = mid + 1; } else { hi = mid; }
-    }
-  }
-  result = lo;
-}
-
-open Tenon in
-theorem lower_boundOk : FnOk [] lower_bound := by
-  kvc lower_bound []
-
-#eval Tenon.evalFn [lower_bound] 0 [.arr [1, 3, 5, 7, 9, 11, 13], .int 8]
-#eval Tenon.evalFn [lower_bound] 0 [.arr [], .int 8]
-#print axioms lower_boundOk
-
-/-! ## Float kernels in the surface syntax -/
-
-kfn ewma_s(x: fslice, alpha: f64, out: inout fslice) -> int(0, 0)
-  requires (len(x) == len(out))
-{
-  let prev: f64 = 0.0;
-  for i upto len(x) invariant (True) {
-    prev = alpha * x[i] + (1.0 - alpha) * prev;
-    out[i] = prev;
-  }
-}
-
-open Tenon in
-theorem ewma_sOk : FnOk [] ewma_s := by
-  kvc ewma_s []
-
--- Mean and mean absolute deviation of a buffer, written to out[0] and out[1].
-kfn mean_mad(x: fslice, out: inout fslice) -> int(0, 0)
-  requires (2 <= len(out))
-{
-  let s: f64 = 0.0;
-  for i upto len(x) invariant (True) {
-    s = s + x[i];
-  }
-  let m: f64 = s / len(x);
-  let d: f64 = 0.0;
-  for j upto len(x) invariant (True) {
-    d = d + fabs(x[j] - m);
-  }
-  out[0] = m;
-  out[1] = d / len(x);
-}
-
-open Tenon in
-theorem mean_madOk : FnOk [] mean_mad := by
-  kvc mean_mad []
-
-#eval Tenon.evalFn [ewma_s] 0 [.farr [1.0, 2.0, 3.0, 4.0], .flt 0.5, .farr [0.0, 0.0, 0.0, 0.0]]
-#eval Tenon.evalFn [mean_mad] 0 [.farr [1.0, 2.0, 3.0, 6.0], .farr [0.0, 0.0]]
-#print axioms ewma_sOk
-#print axioms mean_madOk
-
-/-! ## Select without a branch, and a call -/
-
--- Index of the largest element (first one on ties); -1... is avoided: requires a non-empty slice.
-kfn argmax(x: slice(-1000000000, 1000000000)) -> int(0, 9223372036854775807)
-  requires (1 <= len(x))
-{
-  let best: int(0, 9223372036854775807) = 0;
-  let bv: int(-1000000000, 1000000000) = x[0];
-  for i upto len(x) invariant (0 ≤ best ∧ best ≤ i ∧ best < x_len) {
-    let v: int(-1000000000, 1000000000) = x[i];
-    best = sel(v <= bv, best, i);
-    bv = sel(v <= bv, bv, v);
-  }
-  result = best;
-}
-
-open Tenon in
-theorem argmaxOk : FnOk [] argmax := by
-  kvc argmax []
-
--- A caller: running sum in place, then the count of running sums not above a threshold.
-kfn count_prefix_le(x: slice(-1000000000, 1000000000), tmp: inout slice(-1000000000000000, 1000000000000000),
-                    p: int(-1000000000000000, 1000000000000000)) -> int(0, 1000000)
-  requires (len(x) == len(tmp) && len(x) <= 1000000)
-{
-  let z: int(0, 0) = 0;
-  z = call[0](x, inout tmp);
-  let cnt: int(0, 1000000) = 0;
-  for i upto len(tmp) invariant (0 ≤ cnt ∧ cnt ≤ i) {
-    if tmp[i] <= p { cnt = cnt + 1; } else { }
-  }
-  result = cnt;
-}
-
-open Tenon in
-theorem count_prefix_leOk : FnOk [prefix_sum] count_prefix_le := by
-  kvc count_prefix_le [prefix_sum]
-
-#eval Tenon.evalFn [argmax] 0 [.arr [3, 9, 2, 9, 1]]
-#eval Tenon.evalFn [count_prefix_le, prefix_sum] 0 [.arr [1, 2, 3, 4], .arr [0, 0, 0, 0], .int 5]
-#print axioms argmaxOk
-#print axioms count_prefix_leOk
-
-/-! ## Calls by name: `uses [g, h]` lists the callees; the function is then checked against that list. -/
-
-kfn count_prefix_le2(x: slice(-1000000000, 1000000000), tmp: inout slice(-1000000000000000, 1000000000000000),
-                     p: int(-1000000000000000, 1000000000000000)) -> int(0, 1000000)
-  requires (len(x) == len(tmp) && len(x) <= 1000000)
-  uses [prefix_sum]
-{
-  let z: int(0, 0) = 0;
-  z = prefix_sum(x, inout tmp);
-  let cnt: int(0, 1000000) = 0;
-  for i upto len(tmp) invariant (0 ≤ cnt ∧ cnt ≤ i) {
-    if tmp[i] <= p { cnt = cnt + 1; } else { }
-  }
-  result = cnt;
-}
-
-open Tenon in
-theorem count_prefix_le2Ok : FnOk [prefix_sum] count_prefix_le2 := by
-  kvc count_prefix_le2 [prefix_sum]
-
-/-- The whole two-function program is checked, so `prog_sound` applies to it. -/
-theorem prog2Ok : Tenon.ProgOk [count_prefix_le2, prefix_sum] := by
-  refine ⟨by simp [count_prefix_le2, Tenon.inI64], by simp [count_prefix_le2, Tenon.tysI64, Tenon.inI64, Tenon.condWf, Tenon.ctWf],
-    count_prefix_le2Ok, ?_⟩
-  exact ⟨by simp [prefix_sum, Tenon.inI64], by simp [prefix_sum, Tenon.tysI64, Tenon.inI64, Tenon.condWf, Tenon.ctWf], prefix_sumOk, trivial⟩
-
-#eval Tenon.evalFn [count_prefix_le2, prefix_sum] 0 [.arr [1, 2, 3, 4], .arr [0, 0, 0, 0], .int 5]
-#print axioms prog2Ok

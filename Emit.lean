@@ -135,6 +135,7 @@ def modsArr : Stmt → Nat → Bool
   | .fdecl _ s, k => modsArr s (k + 1)
   | .fite _ _ s t, k => modsArr s k || modsArr t k
   | .loopE _ _ s, k => modsArr s k
+  | .note _ s, k => modsArr s k
   | .seq s t, k => modsArr s k || modsArr t k
   | .store a _ _, k => a == k
   | .ite _ _ s t, k => modsArr s k || modsArr t k
@@ -151,6 +152,7 @@ def storesInto : Stmt → Nat → Bool
   | .fdecl _ s, k => storesInto s (k + 1)
   | .fite _ _ s t, k => storesInto s k || storesInto t k
   | .loopE _ _ s, k => storesInto s k
+  | .note _ s, k => storesInto s k
   | .seq s t, k => storesInto s k || storesInto t k
   | .store a _ _, k => a == k
   | .ite _ _ s t, k => storesInto s k || storesInto t k
@@ -166,6 +168,7 @@ def modsInt : Stmt → Nat → Bool
   | .fdecl _ s, k => modsInt s (k + 1)
   | .fite _ _ s t, k => modsInt s k || modsInt t k
   | .loopE _ _ s, k => modsInt s k
+  | .note _ s, k => modsInt s k
   | .seq s t, k => modsInt s k || modsInt t k
   | .assign x _, k => x == k
   | .ite _ _ s t, k => modsInt s k || modsInt t k
@@ -218,7 +221,7 @@ def fexprAny (p : FExpr → Bool) : FExpr → Bool
 def stmtAnyF (p : FExpr → Bool) : Stmt → Bool
   | .skip | .brk | .call .. | .assign .. | .store .. => false
   | .seq s t | .ite _ _ s t => stmtAnyF p s || stmtAnyF p t
-  | .decl _ _ _ s | .forN _ _ s | .forE _ _ s | .loopB _ _ s | .loopE _ _ s => stmtAnyF p s
+  | .decl _ _ _ s | .forN _ _ s | .forE _ _ s | .loopB _ _ s | .loopE _ _ s | .note _ s => stmtAnyF p s
   | .fassign _ e | .fstore _ _ e => fexprAny p e
   | .fdecl e s => fexprAny p e || stmtAnyF p s
   | .fite a b s t => fexprAny p a || fexprAny p b || stmtAnyF p s || stmtAnyF p t
@@ -229,6 +232,7 @@ def stmtAnyE (p : Expr → Bool) : Stmt → Bool
   | .fdecl e s => fexprAnyE p e || stmtAnyE p s
   | .fite a b s t => fexprAnyE p a || fexprAnyE p b || stmtAnyE p s || stmtAnyE p t
   | .loopE e _ s => exprAny p e || stmtAnyE p s
+  | .note _ s => stmtAnyE p s
   | .skip | .brk | .call .. => false
   | .seq s t => stmtAnyE p s || stmtAnyE p t
   | .assign _ e => exprAny p e
@@ -250,7 +254,7 @@ def stmtUsesBits : Stmt → Bool := stmtAnyF (fun e => match e with | .lit f => 
 def stmtUsesFloat : Stmt → Bool
   | .skip | .brk | .call .. | .assign .. | .store .. => false
   | .seq s t | .ite _ _ s t => stmtUsesFloat s || stmtUsesFloat t
-  | .decl _ _ _ s | .forN _ _ s | .forE _ _ s | .loopB _ _ s | .loopE _ _ s => stmtUsesFloat s
+  | .decl _ _ _ s | .forN _ _ s | .forE _ _ s | .loopB _ _ s | .loopE _ _ s | .note _ s => stmtUsesFloat s
   | .fassign .. | .fstore .. | .fdecl .. | .fite .. => true
 
 /-! ## Expressions -/
@@ -591,6 +595,7 @@ def callArgsC (env : List Slot) (sig : Sig) (args : List (Nat × Bool)) : Except
 partial def stmtC (opts : Options) (callees : List Sig) :
     Stmt → (env : List Slot) → (inLoop : Bool) → (tail : Bool) → (d : Nat) → M (List String)
   | .skip, _, _, _, _ => pure []
+  | .note _ s, env, inLoop, tail, d => stmtC opts callees s env inLoop tail d   -- a label: no code
   | .seq s t, env, inLoop, tail, d => do
     let ls ← stmtC opts callees s env inLoop false d
     let lt ← stmtC opts callees t env inLoop tail d

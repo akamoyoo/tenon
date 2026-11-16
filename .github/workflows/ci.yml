@@ -11,6 +11,12 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Check every proof
         run: lake build
+      - name: The examples: correct ones are proved, incorrect ones are refused
+        run: |
+          for f in rolling_sum notional mean bsearch; do ./tenon check examples/$f.tn; done
+          for f in rolling_sum_bad notional_bad mean_bad bsearch_bad; do
+            if ./tenon check examples/$f.tn; then echo "examples/$f.tn was accepted"; exit 1; fi
+          done
       - name: Build the kernels and test the Python binding against NumPy
         run: |
           python3 -m pip install --user numpy
