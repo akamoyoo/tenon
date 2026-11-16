@@ -470,7 +470,7 @@ limit (`timeout 900`) and every compiled test binary one (600 s; 20 s for delibe
 The whole run took 45 min 10 s here (239 CPU-minutes on eight cores, most of it compiling the 19 MB
 suite file with seven compilers).
 
-**A mismatch found after this run, by the coordinator's rerun with other seeds** (seed 401, program
+**A mismatch found after this run, by a rerun with other seeds** (seed 401, program
 148, one input, clang `-O1 -fsanitize=undefined,address` only): root-caused in
 `MISMATCH-401-148.md` to a **clang 21.1.8 bug** (the `Float2Int` pass folds `1.0 <= x + x` to false
 for a compile-time constant `x = 1e30`), reproducible with `opt` alone and without any generated

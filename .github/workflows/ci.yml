@@ -11,7 +11,7 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Check every proof
         run: lake build
-      - name: The examples: correct ones are proved, incorrect ones are refused
+      - name: "Examples: correct ones are proved, incorrect ones are refused"
         run: |
           for f in rolling_sum notional mean bsearch; do ./tenon check examples/$f.tn; done
           for f in rolling_sum_bad notional_bad mean_bad bsearch_bad; do
