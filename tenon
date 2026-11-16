@@ -7,7 +7,7 @@
     tenon check -v FILE.tn     also print the raw output of the proof checker for failures
     tenon emit FILE.tn         check, and if every function is proved, print the C for the file
 
-A .tn file contains functions and nothing else:
+A .tn file contains functions and comments (`// ...` to the end of a line) and nothing else:
 
     fn name(params) -> int(lo, hi)
       requires (condition)
@@ -42,6 +42,7 @@ HEADER = 'import Surface import Emit\n'          # one line: a line of the sourc
 
 def generate(src, fns):
     body = re.sub(r'^fn(\s)', r'kfn\1', src, flags=re.M)     # same length of lines: positions map by line
+    body = body.replace('//', '--')                          # comments: `// ...` to the end of the line
     lean = HEADER + body
     if not lean.endswith('\n'):
         lean += '\n'
@@ -59,7 +60,7 @@ def generate(src, fns):
     local = {}
     for k, (n, _, _) in enumerate(fns):                      # names of locals and counters, in source order
         text = src[starts[k]:starts[k + 1]]
-        local[n] = [a or b for a, b in re.findall(r'\blet\s+([A-Za-z_]\w*)\s*:|\bfor\s+([A-Za-z_]\w*)\s+upto', text)]
+        local[n] = [a or b for a, b in re.findall(r'\blet\s+([A-Za-z_]\w*)\s*:|(?<!parallel )\bfor\s+([A-Za-z_]\w*)\s+upto', text)]
     def q(xs):
         return ', '.join('"%s"' % x for x in xs)
     names = ', '.join('{ name := "%s", params := [%s], locals := [%s] }' % (n, q(params[n]), q(local[n]))

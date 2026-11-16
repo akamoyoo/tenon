@@ -84,7 +84,21 @@ break;                           -- leaves the innermost loop
 x = g(a, inout b);               -- call; g must be listed after `uses`; arguments are variables
 ```
 
+parallel for i upto e { out[i] = g(a, b, i); }   -- see "Parallel loops" below
+
 There is no `while`, no recursion, no early `return`, no global variable.
+
+**Parallel loops.** `parallel for i upto e { out[i] = g(args, i); }` calls `g` once for every `i` from 0
+to `e - 1`, possibly at the same time on several threads, and stores each result in `out[i]`. The body is
+exactly one such store. Rules: `g` is listed after `uses`; its last argument is the loop variable; every
+other parameter of `g` is by value; `out` is a slice and is not among the arguments; `e` is at most
+`len(out)`. If `out` is an integer slice the result of `g` is stored and must fit `out`'s element range;
+if `out` is an `fslice`, `g` has a last parameter `r: inout f64` and its final value is stored. The
+result is the same whatever the number of threads and whatever order the calls run in (theorem
+`parallel_writes`). To reduce in parallel, cut the data into a number of chunks fixed in the source,
+compute the chunk results with a parallel loop, and combine them with an ordinary loop (see
+`examples/par_sum.tn`). Compile the C with `-fopenmp`; without it the loop runs on one thread and gives
+the same result.
 
 **`for`** runs exactly `e` times unless left by `break`. The counter is read-only in spirit: assigning it
 has no effect on the iteration.

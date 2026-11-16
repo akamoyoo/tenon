@@ -13,10 +13,12 @@ jobs:
         run: lake build
       - name: "Examples: correct ones are proved, incorrect ones are refused"
         run: |
-          for f in rolling_sum notional mean bsearch; do ./tenon check examples/$f.tn; done
+          for f in rolling_sum notional mean bsearch par_sum; do ./tenon check examples/$f.tn; done
           for f in rolling_sum_bad notional_bad mean_bad bsearch_bad; do
             if ./tenon check examples/$f.tn; then echo "examples/$f.tn was accepted"; exit 1; fi
           done
+      - name: "Parallel sum: the same bits for every thread count, equal to the Lean semantics"
+        run: THREADS="1 2 4" REPS=50 ./examples/parallel/run.sh
       - name: Build the kernels and test the Python binding against NumPy
         run: |
           python3 -m pip install --user numpy

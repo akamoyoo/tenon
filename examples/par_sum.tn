@@ -1,0 +1,28 @@
+// The sum of a float slice, computed in parallel, with the same result for any number of threads.
+// The slice is cut into chunks of 16384 elements, a number fixed in the source; threads only decide
+// who computes which chunk. The chunk sums are then added in chunk order.
+
+fn chunk_sum(x: fslice, c: int(0, 1000000), r: inout f64) -> int(0, 0)
+  requires (c * 16384 < len(x) && len(x) <= 10000000000)
+{
+  let lo: int(0, 10000000000) = c * 16384;
+  let hi: int(0, 10000000000) = sel(lo + 16384 <= len(x), lo + 16384, len(x));
+  let s: f64 = 0.0;
+  for k upto hi - lo invariant (always) {
+    s = s + x[lo + k];
+  }
+  r = s;
+}
+
+fn par_sum(x: fslice, parts: inout fslice, out: inout fslice) -> int(0, 0)
+  requires (len(x) <= 10000000000 && len(x) <= 16384 * len(parts) && 1 <= len(out))
+  uses [chunk_sum]
+{
+  let n: int(0, 1000000) = (len(x) + 16383) / 16384;
+  parallel for c upto n { parts[c] = chunk_sum(x, c); }
+  let s: f64 = 0.0;
+  for c upto n invariant (always) {
+    s = s + parts[c];
+  }
+  out[0] = s;
+}

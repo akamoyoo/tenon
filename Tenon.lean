@@ -91,6 +91,12 @@ inductive Stmt where
   | loopB  : Nat → (List Val → Nat → List Val → Prop) → Stmt → Stmt
   | loopE  : Expr → (List Val → Nat → List Val → Prop) → Stmt → Stmt
   | note   : String → Stmt → Stmt
+  | pmap   : Nat → List Nat → Expr → Nat → Stmt
+      -- parallel for i upto n { out[i] = g(args, i) }: g is a callee, args are variables passed by value,
+      -- n is evaluated once, out is an integer slice that is not among args. Every call only reads values
+      -- that no call writes, and writes only its own element: any order of execution gives the same result.
+  | pmapF  : Nat → List Nat → Expr → Nat → Stmt
+      -- the same for a float slice: g takes (args, i, inout r: f64) and out[i] is the final value of r.
       -- the statement, labelled with its source text. It runs exactly like the statement; the label is
       -- carried into the statement's obligations so that a failed proof can say where it comes from.
       -- like loopB, with the proof-only bound given by an expression evaluated at entry (e.g. len(a) + 1)
@@ -282,6 +288,89 @@ def loop (f : Nat → List Val → Option Out) : Nat → Nat → List Val → Op
     | some (.brk env') => some env'
     | none => none
 
+/-- The results of `f 0, ..., f (n-1)`, or none if one of them is none. -/
+def mapN {α : Type} (f : Nat → Option α) : Nat → Option (List α)
+  | 0 => some []
+  | k + 1 => match mapN f k, f k with
+    | some xs, some x => some (xs ++ [x])
+    | _, _ => none
+
+theorem mapN_length {α : Type} (f : Nat → Option α) : ∀ (n : Nat) (rs : List α), mapN f n = some rs → rs.length = n := by
+  intro n
+  induction n with
+  | zero => intro rs h; simp [mapN] at h; subst h; rfl
+  | succ k ih =>
+    intro rs h
+    simp only [mapN] at h
+    split at h
+    next xs x hxs hx => simp at h; subst h; simp [ih xs hxs]
+    next => simp at h
+
+theorem mapN_sound {α : Type} (f : Nat → Option α) (P : α → Prop) : ∀ (n : Nat),
+    (∀ i, i < n → ∃ r, f i = some r ∧ P r) → ∃ rs, mapN f n = some rs ∧ rs.length = n ∧ ∀ v ∈ rs, P v := by
+  intro n
+  induction n with
+  | zero => intro _; exact ⟨[], rfl, rfl, by simp⟩
+  | succ k ih =>
+    intro h
+    obtain ⟨xs, hxs, hlen, hall⟩ := ih (fun i hi => h i (by omega))
+    obtain ⟨x, hx, hp⟩ := h k (by omega)
+    refine ⟨xs ++ [x], by simp [mapN, hxs, hx], by simp [hlen], ?_⟩
+    intro v hv
+    simp at hv
+    rcases hv with hv | hv
+    · exact hall v hv
+    · subst hv; exact hp
+
+/-! ### Why a parallel loop may run in any order
+
+    The result of `pmap` is defined as if every call ran first and the results were then written. In the
+    generated code threads run the calls in chunks, in an order nobody controls. That gives the same
+    array because each call only reads values no call writes (the callee's parameters are all by value
+    and `out` is not among them), so its result does not depend on the order; and writes to different
+    elements commute. The second half is the theorem below: any sequence of writes `out[i] := rs[i]` that
+    writes every index below n at least once, in any order and with any repetition, ends in the array
+    the semantics defines. -/
+
+theorem set_any_order {α : Type} [Inhabited α] (rs : List α) : ∀ (ps : List Nat) (acc : List α),
+    (ps.foldl (fun a i => a.set i rs[i]!) acc).length = acc.length ∧
+    ∀ j, (ps.foldl (fun a i => a.set i rs[i]!) acc)[j]? =
+      if j ∈ ps ∧ j < acc.length then some rs[j]! else acc[j]? := by
+  intro ps
+  induction ps with
+  | nil => intro acc; simp
+  | cons i ps ih =>
+    intro acc
+    obtain ⟨hl, hj⟩ := ih (acc.set i rs[i]!)
+    simp only [List.foldl_cons]
+    refine ⟨by simpa using hl, ?_⟩
+    intro j
+    rw [hj j]
+    simp only [List.length_set, List.mem_cons]
+    by_cases hjp : j ∈ ps
+    · by_cases hlt : j < acc.length <;> simp [hjp, hlt]
+    · by_cases hji : j = i
+      · subst hji; by_cases hlt : j < acc.length <;> simp [hjp, hlt, List.getElem?_set]
+      · have : i ≠ j := fun h => hji h.symm
+        simp [hjp, hji, List.getElem?_set_ne this]
+
+theorem parallel_writes {α : Type} [Inhabited α] (l rs : List α) (n : Nat) (hn : n ≤ l.length) (hrs : rs.length = n)
+    (ps : List Nat) (hps : ∀ j, j ∈ ps ↔ j < n) :
+    ps.foldl (fun a i => a.set i rs[i]!) l = rs ++ l.drop n := by
+  obtain ⟨_, hj⟩ := set_any_order rs ps l
+  apply List.ext_getElem?
+  intro j
+  rw [hj j]
+  by_cases hjn : j < n
+  · have hjl : j < l.length := by omega
+    have hjr : j < rs.length := by omega
+    simp [(hps j).2 hjn, hjl, List.getElem?_append_left hjr, List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem hjr]
+  · have : ¬ j ∈ ps := fun h => hjn ((hps j).1 h)
+    simp only [this, false_and, ite_false]
+    rw [List.getElem?_append_right (by omega), List.getElem?_drop]
+    congr 1
+    omega
+
 /-- A loop that must be left by a break: running out of iterations is stuck. -/
 def loopBrk (f : List Val → Option Out) : Nat → List Val → Option (List Val)
   | 0, _ => none
@@ -341,6 +430,28 @@ def execS (callee : Nat → List Val → Option (Int × List Val)) (Γ : List Ty
     | some env' => some (.norm env')
     | none => none
   | .note _ s, env => execS callee Γ s env
+  | .pmap f args e out, env =>
+    match Γ[out]?, env[out]?, lookups env args, evalE e env with
+    | some (.slice lo hi), some (.arr l), some vs, some nv =>
+      if args.contains out = false ∧ 0 ≤ nv ∧ nv ≤ l.length then
+        match mapN (fun i => match callee f (vs ++ [.int i]) with | some (r, _) => some r | none => none) nv.toNat with
+        | some rs =>
+          if rs.all (fun v => decide (lo ≤ v ∧ v ≤ hi)) then some (.norm (env.set out (.arr (rs ++ l.drop nv.toNat))))
+          else none
+        | none => none
+      else none
+    | _, _, _, _ => none
+  | .pmapF f args e out, env =>
+    match Γ[out]?, env[out]?, lookups env args, evalE e env with
+    | some .fslice, some (.farr l), some vs, some nv =>
+      if args.contains out = false ∧ 0 ≤ nv ∧ nv ≤ l.length then
+        match mapN (fun i => match callee f (vs ++ [.int i, .flt 0.0]) with
+            | some (_, outs) => (match outs.getLast? with | some (.flt v) => some v | _ => none)
+            | none => none) nv.toNat with
+        | some rs => some (.norm (env.set out (.farr (rs ++ l.drop nv.toNat))))
+        | none => none
+      else none
+    | _, _, _, _ => none
   | .loopE e _ s, env => match evalE e env with
     | some n => match loopBrk (fun env => execS callee Γ s env) n.toNat env with
       | some env' => some (.norm env')
@@ -396,6 +507,8 @@ def mods : Stmt → Nat → Bool
   | .loopB _ _ s, i => mods s i
   | .loopE _ _ s, i => mods s i
   | .note _ s, i => mods s i
+  | .pmap _ _ _ out, i => out == i
+  | .pmapF _ _ _ out, i => out == i
   | .forE _ _ s, i => mods s (i + 1)
   | .fassign x _, i => x == i
   | .fstore a _ _, i => a == i
@@ -531,6 +644,44 @@ theorem loopBrk_frame (f : List Val → Option Out) (i : Nat)
     next e1 h1 => rw [ih _ _ h, ← hf _ _ h1]; rfl
     next e1 h1 => simp at h; subst h; exact hf _ _ h1
     next => simp at h
+
+/-- What a `pmap` can do: replace a prefix of the integer slice `out`, nothing else. -/
+theorem exec_pmap_inv {callee : Nat → List Val → Option (Int × List Val)} {Γ : List Ty} {f : Nat} {args : List Nat}
+    {e : Expr} {out : Nat} {env : List Val} {o : Out} (h : execS callee Γ (.pmap f args e out) env = some o) :
+    ∃ l rs, env[out]? = some (.arr l) ∧ rs.length ≤ l.length ∧ o = .norm (env.set out (.arr (rs ++ l.drop rs.length))) := by
+  simp only [execS] at h
+  split at h
+  · rename_i lo hi l vs nv _ ho _ _
+    split at h
+    · rename_i hc
+      split at h
+      · rename_i rs hrs
+        split at h
+        · simp at h
+          have hlen := mapN_length _ _ _ hrs
+          exact ⟨l, rs, ho, by omega, by rw [← h, hlen]⟩
+        · simp at h
+      · simp at h
+    · simp at h
+  · simp at h
+
+/-- The same for `pmapF` and a float slice. -/
+theorem exec_pmapF_inv {callee : Nat → List Val → Option (Int × List Val)} {Γ : List Ty} {f : Nat} {args : List Nat}
+    {e : Expr} {out : Nat} {env : List Val} {o : Out} (h : execS callee Γ (.pmapF f args e out) env = some o) :
+    ∃ l rs, env[out]? = some (.farr l) ∧ rs.length ≤ l.length ∧ o = .norm (env.set out (.farr (rs ++ l.drop rs.length))) := by
+  simp only [execS] at h
+  split at h
+  · rename_i l vs nv _ ho _ _
+    split at h
+    · rename_i hc
+      split at h
+      · rename_i rs hrs
+        simp at h
+        have hlen := mapN_length _ _ _ hrs
+        exact ⟨l, rs, ho, by omega, by rw [← h, hlen]⟩
+      · simp at h
+    · simp at h
+  · simp at h
 
 theorem exec_frame (callee : Nat → List Val → Option (Int × List Val)) (s : Stmt) :
     ∀ (Γ : List Ty) (env : List Val) (o : Out) (i : Nat),
@@ -673,6 +824,16 @@ theorem exec_frame (callee : Nat → List Val → Option (Int × List Val)) (s :
     simp [mods] at hm
     simp only [execS] at h
     exact ihs Γ env o i h hm
+  | pmap f args e out =>
+    intro Γ env o i h hm
+    simp [mods] at hm
+    obtain ⟨l, rs, _, _, rfl⟩ := exec_pmap_inv h
+    simp [Out.env, List.getElem?_set_ne hm]
+  | pmapF f args e out =>
+    intro Γ env o i h hm
+    simp [mods] at hm
+    obtain ⟨l, rs, _, _, rfl⟩ := exec_pmapF_inv h
+    simp [Out.env, List.getElem?_set_ne hm]
   | loopE e I s ihs =>
     intro Γ env o i h hm
     simp [mods] at hm
@@ -913,6 +1074,14 @@ theorem exec_lens (callee : Nat → List Val → Option (Int × List Val)) (hc :
     intro Γ env o h
     simp only [execS] at h
     exact ihs Γ env o h
+  | pmap f args e out =>
+    intro Γ env o h
+    obtain ⟨l, rs, ho, hle, rfl⟩ := exec_pmap_inv h
+    exact lens_set env out _ _ ho (by simp [shape]; omega)
+  | pmapF f args e out =>
+    intro Γ env o h
+    obtain ⟨l, rs, ho, hle, rfl⟩ := exec_pmapF_inv h
+    exact lens_set env out _ _ ho (by simp [shape]; omega)
   | loopE e I s ihs =>
     intro Γ env o h
     simp only [execS] at h
@@ -1070,6 +1239,24 @@ def wpS (rest : List Fn) (Γ : List Ty) : Stmt → List Val → (List Val → Pr
         wpS rest (.int 0 9223372036854775807 :: Γ) s (.int i :: env') (popped (I env (i + 1))) (popped Q)) ∧
       (∀ env', hasAll Γ env' = true → sameAt (kept Γ s) env env' → lens env' = lens env → I env nv.toNat env' → Q env'))
   | .note t s, env, Q, B => Tag t → wpS rest Γ s env Q B
+  | .pmap f args e out, env, Q, _ => match rest[f]?, Γ[out]?, lookups env args, env[out]? with
+    | some g, some (.slice lo hi), some vs, some (.arr l) =>
+        args.contains out = false ∧ g.params.all (fun p => !p.2) = true ∧ lo ≤ g.rlo ∧ g.rhi ≤ hi ∧
+        wpE Γ e env (fun nv => 0 ≤ nv ∧ nv ≤ l.length ∧
+          (∀ i : Nat, (i : Int) < nv → hasAll (g.params.map (·.1)) (vs ++ [.int i]) = true ∧
+              evalC g.req (vs ++ [.int i]) = true ∧ g.pre (vs ++ [.int i])) ∧
+          ∀ rs : List Int, rs.length = nv.toNat → (∀ v ∈ rs, g.rlo ≤ v ∧ v ≤ g.rhi) →
+            Q (env.set out (.arr (rs ++ l.drop nv.toNat))))
+    | _, _, _, _ => False
+  | .pmapF f args e out, env, Q, _ => match rest[f]?, Γ[out]?, lookups env args, env[out]? with
+    | some g, some .fslice, some vs, some (.farr l) =>
+        args.contains out = false ∧ g.params.dropLast.all (fun p => !p.2) = true ∧
+        g.params.getLast? = some (.flt, true) ∧
+        wpE Γ e env (fun nv => 0 ≤ nv ∧ nv ≤ l.length ∧
+          (∀ i : Nat, (i : Int) < nv → hasAll (g.params.map (·.1)) (vs ++ [.int i, .flt 0.0]) = true ∧
+              evalC g.req (vs ++ [.int i, .flt 0.0]) = true ∧ g.pre (vs ++ [.int i, .flt 0.0])) ∧
+          ∀ rs : List Float, rs.length = nv.toNat → Q (env.set out (.farr (rs ++ l.drop nv.toNat))))
+    | _, _, _, _ => False
   | .loopE e I s, env, Q, _ => wpE Γ e env (fun nv => I env 0 env ∧
       (∀ (i : Nat) env', i < nv.toNat → hasAll Γ env' = true → sameAt (keptB Γ s) env env' → lens env' = lens env →
         I env i env' → wpS rest Γ s env' (I env (i + 1)) Q) ∧
@@ -1418,6 +1605,30 @@ theorem loopBrk_sound (f : List Val → Option Out) (I : Nat → List Val → Pr
       exact ⟨env2, by simp [loopBrk, h1, h2], hq⟩
     | brk env1 => exact ⟨env1, by simp [loopBrk, h1], ho⟩
 
+/-- The last value of a typed list whose last type is `f64` is a float. -/
+theorem hasAll_last_flt : ∀ (ts : List Ty) (vs : List Val), hasAll ts vs = true → ts.getLast? = some .flt →
+    ∃ v, vs.getLast? = some (.flt v) := by
+  intro ts
+  induction ts with
+  | nil => intro vs _ h; simp at h
+  | cons t ts ih =>
+    intro vs hv ht
+    cases vs with
+    | nil => simp [hasAll] at hv
+    | cons v vs =>
+      simp [hasAll] at hv
+      cases ts with
+      | nil =>
+        cases vs with
+        | nil => simp at ht; subst ht; obtain ⟨x, rfl⟩ := has_flt hv.1; exact ⟨x, rfl⟩
+        | cons _ _ => simp [hasAll] at hv
+      | cons t' ts' =>
+        cases vs with
+        | nil => simp [hasAll] at hv
+        | cons v' vs' =>
+          have := ih (v' :: vs') hv.2 (by simpa [List.getLast?_cons_cons] using ht)
+          simpa [List.getLast?_cons_cons] using this
+
 /-- Statements: not stuck, the postcondition holds, and the environment still has its types. -/
 theorem wpS_sound (rest : List Fn) (callee : Nat → List Val → Option (Int × List Val)) (hc : CalleesOk rest callee)
     (hlc : LensOk callee) (s : Stmt) : ∀ (Γ : List Ty) (env : List Val) (Q B : List Val → Prop),
@@ -1653,6 +1864,71 @@ theorem wpS_sound (rest : List Fn) (callee : Nat → List Val → Option (Int ×
     intro Γ env Q B hΓ h
     obtain ⟨o, ho, hs⟩ := ihs Γ env Q B hΓ (h (Tag.intro t))
     exact ⟨o, by simp [execS, ho], hs⟩
+  | pmap f args e out =>
+    intro Γ env Q B hΓ h
+    simp only [wpS] at h
+    split at h
+    · rename_i g lo hi vs l hg hty hl ho
+      obtain ⟨hno, _, hlo, hhi, he⟩ := h
+      obtain ⟨nv, hnv, h0, hle, hcalls, hQ⟩ := wpE_sound Γ env hΓ e _ he
+      obtain ⟨rs, hrs, hlen, hrange⟩ := mapN_sound
+        (fun i => match callee f (vs ++ [.int i]) with | some (r, _) => some r | none => none)
+        (fun r => g.rlo ≤ r ∧ r ≤ g.rhi) nv.toNat (by
+          intro i hi
+          obtain ⟨h1, h2, h3⟩ := hcalls i (by omega)
+          obtain ⟨r, outs, hr, hr1, hr2, _, _, _⟩ := hc f g _ hg h1 h2 h3
+          exact ⟨r, by simp [hr], hr1, hr2⟩)
+      obtain ⟨w, hw, hhas⟩ := hasAll_get Γ env out _ hΓ hty
+      rw [ho] at hw
+      cases hw
+      obtain ⟨l', hl', hlen', hall⟩ := has_slice hhas
+      cases hl'
+      have hall_rs : rs.all (fun v => decide (lo ≤ v ∧ v ≤ hi)) = true := by
+        simp only [List.all_eq_true, decide_eq_true_eq]
+        intro v hv; have := hrange v hv; omega
+      refine ⟨.norm _, by
+        simp [execS, hty, ho, hl, hnv, h0, hle, hrs]
+        exact ⟨by simpa using hno, fun v hv => by have := hrange v hv; omega⟩, ?_, hQ rs hlen hrange⟩
+      apply hasAll_set Γ env out _ _ hΓ hty
+      simp only [Val.has, List.length_append, List.length_drop, Bool.and_eq_true, decide_eq_true_eq,
+        List.all_eq_true, List.mem_append]
+      refine ⟨by omega, ?_⟩
+      intro v hv
+      rcases hv with hv | hv
+      · have := hrange v hv; exact ⟨by omega, by omega⟩
+      · exact hall v (List.mem_of_mem_drop hv)
+    · exact h.elim
+  | pmapF f args e out =>
+    intro Γ env Q B hΓ h
+    simp only [wpS] at h
+    split at h
+    · rename_i g vs l hg hty hl ho
+      obtain ⟨hno, _, hlast, he⟩ := h
+      obtain ⟨nv, hnv, h0, hle, hcalls, hQ⟩ := wpE_sound Γ env hΓ e _ he
+      obtain ⟨rs, hrs, hlen, _⟩ := mapN_sound
+        (fun i => match callee f (vs ++ [.int i, .flt 0.0]) with
+            | some (_, outs) => (match outs.getLast? with | some (.flt v) => some v | _ => none)
+            | none => none)
+        (fun _ => True) nv.toNat (by
+          intro i hi
+          obtain ⟨h1, h2, h3⟩ := hcalls i (by omega)
+          obtain ⟨r, outs, hr, _, _, houts, _, _⟩ := hc f g _ hg h1 h2 h3
+          have hl2 : (g.params.map (·.1)).getLast? = some .flt := by
+            rw [List.getLast?_map, hlast]; rfl
+          obtain ⟨v, hv⟩ := hasAll_last_flt _ outs houts hl2
+          exact ⟨v, by simp [hr, hv], trivial⟩)
+      obtain ⟨w, hw, hhas⟩ := hasAll_get Γ env out _ hΓ hty
+      rw [ho] at hw
+      cases hw
+      obtain ⟨l', hl', hlen'⟩ := has_fslice hhas
+      cases hl'
+      refine ⟨.norm _, by
+        simp [execS, hty, ho, hl, hnv, h0, hle, hrs]
+        simpa using hno, ?_, hQ rs hlen⟩
+      apply hasAll_set Γ env out _ _ hΓ hty
+      simp only [Val.has, List.length_append, List.length_drop, decide_eq_true_eq]
+      omega
+    · exact h.elim
   | loopE e I s ihs =>
     intro Γ env Q B hΓ h
     obtain ⟨nv, hnv, h0, hstep, hend⟩ := wpE_sound Γ env hΓ e _ h
@@ -2009,3 +2285,4 @@ macro_rules
 #print axioms prog_sound
 
 end Tenon
+#print axioms Tenon.parallel_writes

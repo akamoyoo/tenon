@@ -898,6 +898,8 @@ def reprS (d : Nat) : Stmt → String
   | .fite a b s t => s!"(fite {reprF a} {reprF b}\n{ind (d+1) ""}{reprS (d+1) s}\n{ind (d+1) ""}{reprS (d+1) t})"
   | .loopE e _ s => s!"(loopE {reprE e} triv\n{ind (d+1) ""}{reprS (d+1) s})"
   | .note _ s => reprS d s
+  | .pmap f as e o => s!"(pmap {f} {as} {reprE e} {o})"
+  | .pmapF f as e o => s!"(pmapF {f} {as} {reprE e} {o})"
 
 def reprTy : Ty × Bool → String
   | (.int lo hi, io) => s!"(.int {pInt lo} {pInt hi}, {io})"

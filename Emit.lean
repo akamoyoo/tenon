@@ -136,6 +136,7 @@ def modsArr : Stmt → Nat → Bool
   | .fite _ _ s t, k => modsArr s k || modsArr t k
   | .loopE _ _ s, k => modsArr s k
   | .note _ s, k => modsArr s k
+  | .pmap _ _ _ out, k | .pmapF _ _ _ out, k => out == k
   | .seq s t, k => modsArr s k || modsArr t k
   | .store a _ _, k => a == k
   | .ite _ _ s t, k => modsArr s k || modsArr t k
@@ -153,6 +154,7 @@ def storesInto : Stmt → Nat → Bool
   | .fite _ _ s t, k => storesInto s k || storesInto t k
   | .loopE _ _ s, k => storesInto s k
   | .note _ s, k => storesInto s k
+  | .pmap _ _ _ out, k | .pmapF _ _ _ out, k => out == k
   | .seq s t, k => storesInto s k || storesInto t k
   | .store a _ _, k => a == k
   | .ite _ _ s t, k => storesInto s k || storesInto t k
@@ -169,6 +171,7 @@ def modsInt : Stmt → Nat → Bool
   | .fite _ _ s t, k => modsInt s k || modsInt t k
   | .loopE _ _ s, k => modsInt s k
   | .note _ s, k => modsInt s k
+  | .pmap _ _ _ _, _ | .pmapF _ _ _ _, _ => false
   | .seq s t, k => modsInt s k || modsInt t k
   | .assign x _, k => x == k
   | .ite _ _ s t, k => modsInt s k || modsInt t k
@@ -222,6 +225,7 @@ def stmtAnyF (p : FExpr → Bool) : Stmt → Bool
   | .skip | .brk | .call .. | .assign .. | .store .. => false
   | .seq s t | .ite _ _ s t => stmtAnyF p s || stmtAnyF p t
   | .decl _ _ _ s | .forN _ _ s | .forE _ _ s | .loopB _ _ s | .loopE _ _ s | .note _ s => stmtAnyF p s
+  | .pmap _ _ _ _ | .pmapF _ _ _ _ => false
   | .fassign _ e | .fstore _ _ e => fexprAny p e
   | .fdecl e s => fexprAny p e || stmtAnyF p s
   | .fite a b s t => fexprAny p a || fexprAny p b || stmtAnyF p s || stmtAnyF p t
@@ -233,6 +237,7 @@ def stmtAnyE (p : Expr → Bool) : Stmt → Bool
   | .fite a b s t => fexprAnyE p a || fexprAnyE p b || stmtAnyE p s || stmtAnyE p t
   | .loopE e _ s => exprAny p e || stmtAnyE p s
   | .note _ s => stmtAnyE p s
+  | .pmap _ _ e _ | .pmapF _ _ e _ => exprAny p e
   | .skip | .brk | .call .. => false
   | .seq s t => stmtAnyE p s || stmtAnyE p t
   | .assign _ e => exprAny p e
@@ -255,6 +260,8 @@ def stmtUsesFloat : Stmt → Bool
   | .skip | .brk | .call .. | .assign .. | .store .. => false
   | .seq s t | .ite _ _ s t => stmtUsesFloat s || stmtUsesFloat t
   | .decl _ _ _ s | .forN _ _ s | .forE _ _ s | .loopB _ _ s | .loopE _ _ s | .note _ s => stmtUsesFloat s
+  | .pmap _ _ _ _ => false
+  | .pmapF _ _ _ _ => true
   | .fassign .. | .fstore .. | .fdecl .. | .fite .. => true
 
 /-! ## Expressions -/
@@ -589,6 +596,46 @@ def callArgsC (env : List Slot) (sig : Sig) (args : List (Nat × Bool)) : Except
     | some _, _ => throw s!"call {sig.cname}: argument {i} has the wrong kind"
     | none, _ => throw s!"call {sig.cname}: no variable at position {i}"
 
+/-- A parallel map. Each iteration calls the callee with the by-value arguments and the index, and
+    writes element i of `out`; nothing else is written. RELIES ON T2 (the callee's parameters other than
+    the result are by value, `out` is not among the arguments, the bound is between 0 and len(out), and
+    every call satisfies the callee's requirement) and on `parallel_writes` (writes to distinct elements
+    in any order give the semantics' result). Without OpenMP the pragma is ignored and the loop runs in
+    order, which by the same theorem gives the same result. -/
+def pmapC (opts : Options) (callees : List Sig) (f : Nat) (args : List Nat) (e : Expr) (out : Nat)
+    (env : List Slot) (d : Nat) (isFloat : Bool) : M (List String) := do
+  match callees[f]? with
+  | none => throw s!"parallel map {f}: no such earlier function"
+  | some sig =>
+    let k := if isFloat then 2 else 1
+    if sig.params.length != args.length + k then
+      throw s!"parallel map {sig.cname}: {args.length} arguments for {sig.params.length - k} parameters"
+    let cs ← liftE (callArgsC env { cname := sig.cname, params := sig.params.take args.length }
+      (args.map fun a => (a, false)))
+    let se := (← liftE (exprC opts env e 0)).s
+    let i ← reserve "tn_i"
+    let n ← reserve "tn_n"
+    match env[out]?, isFloat with
+    | some (.slice c _ true), false =>
+      pure [ind d "{",
+            ind (d + 1) s!"int64_t {n} = {se};",
+            ind (d + 1) "#pragma omp parallel for schedule(static)",
+            ind (d + 1) s!"for (int64_t {i} = 0; {i} < {n}; {i}++)",
+            ind (d + 2) s!"{c}[{i}] = {sig.cname}({", ".intercalate (cs ++ [i])});",
+            ind d "}"]
+    | some (.fslice c _ true), true =>
+      pure [ind d "{",
+            ind (d + 1) s!"int64_t {n} = {se};",
+            ind (d + 1) "#pragma omp parallel for schedule(static)",
+            ind (d + 1) s!"for (int64_t {i} = 0; {i} < {n}; {i}++) \{",
+            ind (d + 2) "double tn_r = 0.0;",
+            ind (d + 2) s!"{sig.cname}({", ".intercalate (cs ++ [i, "&tn_r"])});",
+            ind (d + 2) s!"{c}[{i}] = tn_r;",
+            ind (d + 1) "}",
+            ind d "}"]
+    | some sl, _ => throw s!"parallel map {sig.cname}: `{sl.cname}` is not a writable {if isFloat then "float " else ""}slice"
+    | none, _ => throw s!"parallel map {sig.cname}: no variable at position {out}"
+
 /-- Emit `s` as a list of C lines at indentation `d`.
     `tail`: `s` is the last thing in its enclosing C block, so a `decl` may declare its variable
     directly in that block (same extent as the Tenon scope) instead of opening a block of its own. -/
@@ -751,6 +798,8 @@ partial def stmtC (opts : Options) (callees : List Sig) :
   | .brk, _, inLoop, _, d =>
     if inLoop then pure [ind d "break;"]
     else throw "brk outside a loop (always stuck in Tenon when reached)"
+  | .pmap f args e out, env, _, _, d => pmapC opts callees f args e out env d false
+  | .pmapF f args e out, env, _, _, d => pmapC opts callees f args e out env d true
   | .call f args dst, env, _, _, d => do
     -- RELIES ON T2: the arguments have the callee's parameter types and satisfy its precondition;
     -- the result is within dst's range; `exclusive args dst` holds (so no two pointer arguments

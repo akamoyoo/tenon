@@ -10,9 +10,11 @@ and linked into a C++ or Python program. The check is a machine-verified proof, 
 Status: research prototype, not released. Working name. Read "What is not claimed" first if you intend
 to rely on anything here.
 
-## Three functions that Rust compiles and Tenon refuses
+## Four programs Rust compiles, and what Tenon does with them
 
-Each is a few lines, each has a slip that people make, and each fails only on some inputs. The Rust
+The first three are a few lines each, each with a slip that people make, each failing only on some
+inputs: Tenon refuses to compile them. The fourth is correct in Rust and still gives a different answer
+on a different machine: Tenon gives one answer. The Rust
 sources are in `examples/rust/` and the behaviour quoted is what they did here (rustc 1.87, x86-64).
 
 ### 1. A rolling sum that reads before the window is full
@@ -98,6 +100,66 @@ examples/mean_bad.tn:8: in `mean`: cannot show
 In all three, Rust keeps memory safe: it turns the fault into a panic, which in a trading system is still
 an outage, or (case 2, release build) lets a wrong number through. Tenon moves all three to compile time.
 
+### 4. With threads: a sum whose result depends on the machine
+
+Rust's guarantee for threads is the absence of data races, and it holds here. What it does not cover:
+
+```rust
+// each thread sums a chunk; the partial sums are added in the order they arrive
+let (tx, rx) = mpsc::channel();
+for t in 0..k { /* spawn: sum data[t*n/k .. (t+1)*n/k], send it */ }
+let total: f64 = rx.iter().sum();
+```
+
+The same 10^6 doubles, summed with different numbers of threads (`examples/rust/par_sum.rs`):
+
+| Threads | Bits of the result |
+|---:|---|
+| 1 | `41aeac37e6305140` |
+| 2 | `41aeac37e6305079` |
+| 4 | `41aeac37e6304f86` |
+| 8 | `41aeac37e6304f9e` |
+| 16 | `41aeac37e6304fbb` |
+
+With 16 threads, 2000 runs gave 3 different results, because the order in which partial sums arrive
+changes from run to run. A backtest on a 16-core machine and production on an 8-core one do not agree,
+and neither agrees with itself. (Also compiled and run: two threads taking two `Mutex`es in opposite
+order, `examples/rust/deadlock.rs`, hang forever. Rust does not prevent deadlocks either.)
+
+The same sum in Tenon (`examples/par_sum.tn`):
+
+```
+fn par_sum(x: fslice, parts: inout fslice, out: inout fslice) -> int(0, 0)
+  requires (len(x) <= 10000000000 && len(x) <= 16384 * len(parts) && 1 <= len(out))
+  uses [chunk_sum]
+{
+  let n: int(0, 1000000) = (len(x) + 16383) / 16384;
+  parallel for c upto n { parts[c] = chunk_sum(x, c); }     // chunks of 16384, in parallel
+  let s: f64 = 0.0;
+  for c upto n invariant (always) { s = s + parts[c]; }      // chunk sums added in chunk order
+  out[0] = s;
+}
+```
+
+| Threads | Bits of the result (gcc 13 and clang 21, `-fopenmp`) | Runs differing from the first | Best time |
+|---:|---|---:|---:|
+| 1 | `41aeac37e6304d55` | 0 of 2000 | 1.16 ms |
+| 2 | `41aeac37e6304d55` | 0 of 2000 | 0.59 ms |
+| 4 | `41aeac37e6304d55` | 0 of 2000 | 0.30 ms |
+| 8 | `41aeac37e6304d55` | 0 of 2000 | 0.15 ms |
+| 16 | `41aeac37e6304d55` | 0 of 2000 | 0.08 ms |
+
+The result is fixed by the program, not by the machine: the number of chunks is part of the source, and
+threads only decide who computes which chunk. The C (OpenMP) agrees bit for bit with the Lean semantics
+(`examples/parallel/run.sh` checks both). On 2 × 10^7 elements 8 threads are 3 to 5 times faster than
+one; beyond that memory bandwidth is the limit.
+
+Why it holds. In `parallel for i upto n { out[i] = g(args, i); }` the checker requires that `g` takes its
+other arguments by value and that `out` is not among them, so each call reads only values no call writes,
+and writes only its own element. The semantics is defined as "all calls, then all writes"; the theorem
+`parallel_writes` shows that writes in any order, each element at least once, give exactly that array.
+There are no locks in the language, so there is nothing to deadlock on.
+
 ## What a Tenon function looks like
 
 `examples/rolling_sum.tn`, the corrected first example:
@@ -168,7 +230,7 @@ For a program that passes the check (`ProgOk`), called with arguments of the dec
 |---|---|---|
 | No run-time failure | No index out of range, no value outside 64 bits or outside its declared range, no division outside its domain | Theorem `prog_sound`, proved in Lean 4 |
 | Bounded resources | Every function terminates; no allocation; no recursion; stack use is static | By construction: the semantics is a total function defined without fuel, and Lean accepts it |
-| Reproducible results | The result is a function of the arguments | By construction: the semantics is a function. For floats see the qualification below |
+| Reproducible results | The result is a function of the arguments, also with `parallel for`, whatever the number of threads | By construction: the semantics is a function; for parallel loops, theorem `parallel_writes`. For floats see the qualification below |
 | Unchanged means unchanged | A variable a statement cannot assign has the same value afterwards; no array changes length | Theorems `exec_frame`, `exec_lens` |
 
 Authority confinement (a function reaches the outside world only through capability parameters) is the
@@ -238,8 +300,12 @@ All on one machine (x86-64, clang 21.1.8 and gcc 13, `-O2`), numbers from runs i
   tested (every non-NaN result of fourteen operations on 31,971 input pairs agreed), not proved.
 - **`ensures` does not exist in the surface syntax.** What is proved is safety, not that `prefix_sum`
   computes prefix sums.
-- **The language is small.** No structs, no enums, no capabilities, no components, no concurrency, no
-  strings. Function results are integers; a float result goes through an `inout` slice.
+- **Concurrency is one construct.** `parallel for` over independent calls, compiled to OpenMP. No
+  threads that communicate, no queues, no components, no shared data structures. The OpenMP runtime is
+  trusted, and so is the generated C's property that a callee reads only its arguments (it follows from
+  the checked rule, but the emitter is not proved). The differential test does not generate parallel
+  loops yet; `examples/parallel/run.sh` is the test.
+- **The language is small.** No structs, no enums, no capabilities, no strings. Function results are integers; a float result goes through an `inout` slice.
 - **Lean is behind the `tenon` command.** A `.tn` file contains only Tenon, but checking it runs Lean,
   which must be installed, and takes seconds per file. Messages are translated for obligations that could
   not be proved; a syntax error is reported in Lean's words. Longer examples in this tree are still
@@ -253,6 +319,7 @@ All on one machine (x86-64, clang 21.1.8 and gcc 13, `-O2`), numbers from runs i
 ```
 tenon             the command: `tenon check file.tn`, `tenon emit file.tn`
 examples/         the examples above, correct and incorrect versions, and the Rust counterparts
+examples/parallel/  the parallel sum: build with OpenMP, run with several thread counts, compare bits
 Tenon.lean        the language: values, types, syntax, semantics, obligations, soundness proofs, tactics
 Surface.lean      the surface syntax (Lean macros)
 SurfaceExamples.lean   ten functions written in it, each proved in one line
@@ -275,6 +342,7 @@ Needs Lean 4.35.0 (elan), clang and gcc, Python with NumPy for the binding.
 lake build                                              # every proof; fails if any is missing
 ./tenon check examples/rolling_sum.tn                   # check one source file
 ./tenon emit examples/rolling_sum.tn > rolling_sum.c    # and print its C
+./examples/parallel/run.sh                              # the parallel sum, 1 to 16 threads
 ./py/build.sh && (cd py && python3 test_tenon_kernels.py)   # shared library and binding tests
 ./difftest/run.sh                                       # differential test (about 45 minutes)
 ./floatcheck/run.sh                                     # Lean Float against C

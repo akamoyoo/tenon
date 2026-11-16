@@ -81,6 +81,7 @@ syntax ident : karg
 syntax "inout " ident : karg
 syntax ident " = " "call" "[" num "]" "(" karg,* ")" ";" : ks
 syntax ident " = " ident "(" karg,* ")" ";" : ks
+syntax "parallel " "for " ident " upto " kx " {" ident "[" ident "]" " = " ident "(" ident,* ")" ";" "}" : ks
 syntax "break" ";" : ks
 
 declare_syntax_cat kparam
@@ -307,6 +308,26 @@ partial def trBlock (callees : Array Name) (sc : Scope) (ss : List (TSyntax `ks)
           | _ => Macro.throwErrorAt a "an argument is a variable, or `inout` and a variable"
         let asList : Syntax.TSepArray `term "," := .ofElems as
         seq (← `(Tenon.Stmt.call $(quote fi) [$asList,*] $(quote k)))
+    | `(ks| parallel for $i:ident upto $e { $o:ident [ $j:ident ] = $g:ident ( $as,* ) ; }) => do
+        if j.getId != i.getId then
+          Macro.throwErrorAt j s!"a parallel loop writes element `{i.getId}` of its output, not `{j.getId}`"
+        let elems := as.getElems
+        if elems.size == 0 || elems.back!.getId != i.getId then
+          Macro.throwErrorAt g s!"the last argument of `{g.getId}` must be the loop variable `{i.getId}`"
+        let some fi := callees.findIdx? (· == g.getId)
+          | Macro.throwErrorAt g s!"{g.getId} is not listed after `uses`"
+        let (ko, kind) ← need sc o
+        let mut idxs : Array (TSyntax `term) := #[]
+        for a in elems.pop do
+          if a.getId == o.getId then
+            Macro.throwErrorAt a s!"the output `{o.getId}` of a parallel loop cannot also be an argument"
+          let (k, _) ← need sc a
+          idxs := idxs.push (quote k)
+        let idxList : Syntax.TSepArray `term "," := .ofElems idxs
+        match kind with
+        | .a => seq (← `(Tenon.Stmt.pmap $(quote fi) [$idxList,*] $(← trI sc e) $(quote ko)))
+        | .fa => seq (← `(Tenon.Stmt.pmapF $(quote fi) [$idxList,*] $(← trI sc e) $(quote ko)))
+        | _ => Macro.throwErrorAt o s!"the output `{o.getId}` of a parallel loop must be a slice"
     | `(ks| break ;) => seq (← `(Tenon.Stmt.brk))
     | _ => Macro.throwErrorAt s "unsupported statement"
 
