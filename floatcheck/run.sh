@@ -9,13 +9,13 @@ GCC=${GCC:-gcc}
 N=${N:-30000}
 OUT=build/floatcheck
 STRICT="-std=c11 -w -ffp-contract=off -fno-fast-math"
-taskset -c 8-15 lake build fpcheck 2>&1 | grep -E "^error|Build completed" || exit 1
+lake build fpcheck 2>&1 | grep -E "^error|Build completed" || exit 1
 rm -rf "$OUT"; mkdir -p "$OUT/compiled" "$OUT/interp"
 status=0
 echo "== compiled Lean =="
 .lake/build/bin/fpcheck "$OUT/compiled" $N || status=1
 echo "== interpreted Lean (lean --run) =="
-taskset -c 8-15 lake env lean --run floatcheck/FloatCheck.lean "$OUT/interp" $N || status=1
+lake env lean --run floatcheck/FloatCheck.lean "$OUT/interp" $N || status=1
 if cmp -s "$OUT/compiled/expected.txt" "$OUT/interp/expected.txt"; then echo "compiled and interpreted Lean: identical results ($(wc -l < "$OUT/compiled/expected.txt") lines)"
 else echo "compiled and interpreted Lean DIFFER: $(diff "$OUT/compiled/expected.txt" "$OUT/interp/expected.txt" | grep -c '^<') lines"; status=1; fi
 d="$OUT/compiled"

@@ -11,13 +11,13 @@ GCC=${GCC:-gcc}
 SEEDS=${SEEDS:-"1 2 3 4 5 6 7 8"}
 NPROGS=${NPROGS:-500}
 NINPUTS=${NINPUTS:-16}
-CPUS=${CPUS:-8-15}
+CPUS=${CPUS:-0-$(( $(nproc) - 1 ))}
 OUT=build/difftest
 # The flags the float guarantee needs (README.md, "Compiler flags"): no contraction, no fast-math.
 W="-std=c11 -w -ffp-contract=off -fno-fast-math"
 BUILDS="clang-O0 clang-O2 gcc-O0 gcc-O2 clang-ubsan clang-O2-native gcc-O2-native"
 
-taskset -c $CPUS lake build difftest > build-difftest.log 2>&1 || { grep -E "^error" build-difftest.log; echo "lake build failed"; exit 1; }
+lake build difftest > build-difftest.log 2>&1 || { grep -E "^error" build-difftest.log; echo "lake build failed"; exit 1; }
 grep -E "Build completed" build-difftest.log; rm -f build-difftest.log
 rm -rf "$OUT"; mkdir -p "$OUT"
 # The generator runs the reference evaluator on every input. Loop bounds in generated programs are

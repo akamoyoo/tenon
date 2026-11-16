@@ -10,7 +10,7 @@ export PATH="$HOME/.elan/bin:$PATH"
 CC=${CC:-clang}
 OUT=${OUT:-py/build}
 MARCH=${MARCH:-}
-taskset -c 8-15 lake build pygen > "$OUT.lake.log" 2>&1 || { grep -E "^error" -A8 "$OUT.lake.log"; exit 1; }
+lake build pygen > "$OUT.lake.log" 2>&1 || { grep -E "^error" -A8 "$OUT.lake.log"; exit 1; }
 rm -f "$OUT.lake.log"
 .lake/build/bin/pygen "$OUT"
 FLAGS="-O2 -std=c11 -ffp-contract=off -fno-fast-math ${MARCH:+-march=$MARCH}"

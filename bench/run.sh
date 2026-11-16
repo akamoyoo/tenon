@@ -12,7 +12,7 @@ CPU=${CPU:-12}
 OUT=build/bench
 STRICT="-std=c11 -ffp-contract=off -fno-fast-math"
 mkdir -p "$OUT/asm"
-taskset -c 8-15 lake build benchgen > "$OUT/lake.log" 2>&1 || { grep -A8 "^error" "$OUT/lake.log"; exit 1; }
+lake build benchgen > "$OUT/lake.log" 2>&1 || { grep -A8 "^error" "$OUT/lake.log"; exit 1; }
 .lake/build/bin/benchgen "$OUT"
 GEN="gen_ewma gen_sum8 gen_dot gen_rmean gen_rstd gen_rvar gen_rvar_plain gen_rvar_lazy gen_rvar_mask gen_clip gen_clip_plain gen_clip_lazy gen_clip_mask gen_fwhere gen_fwhere_plain gen_fwhere_lazy gen_fwhere_mask"
 echo "machine: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | sed 's/^ //'), $(uname -sr)"
