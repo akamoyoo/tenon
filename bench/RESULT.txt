@@ -1,0 +1,1567 @@
+machine: Intel(R) Xeon(R) CPU E5-2650 v3 @ 2.30GHz, Linux 6.8.0-147-generic
+idle before the run (mpstat, cores 8-15): 8:100.00% 9:97.00% 10:65.66% 11:100.00% 12:83.00% 13:97.03% 14:91.09% 15:86.87% 
+=== C benchmark, clang -O2 -std=c11 -ffp-contract=off -fno-fast-math (clang version 21.1.8 (https://github.com/conda-forge/clangdev-feedstock 0586bae95bd818412431982353f925478061d031)), pinned to cpu 12 ===
+    (naive_*_fast is compiled with -O2 -ffast-math instead of the strict flags)
+-- N = 10000000 --
+sum      gen_sum8           N=10000000  min   0.7016  median   0.7067 ns/element   checksum 409e6f7077c6e926
+sum      hand_sum8          N=10000000  min   0.7317  median   0.7330 ns/element   checksum 409e6f7077c6e926
+sum      naive_sum_strict   N=10000000  min   1.2540  median   1.2586 ns/element   checksum 409e6f7077c6ea0f
+sum      naive_sum_fast     N=10000000  min   0.6782  median   0.6803 ns/element   checksum 409e6f7077c6e9b6
+dot      gen_dot            N=10000000  min   1.1712  median   1.1780 ns/element   checksum c07c141c5b6595dc
+dot      hand_dot           N=10000000  min   1.2236  median   1.2262 ns/element   checksum c07c141c5b6595dc
+dot      naive_dot_strict   N=10000000  min   1.4344  median   1.4359 ns/element   checksum c07c141c5b6593a3
+dot      naive_dot_fast     N=10000000  min   1.1003  median   1.1054 ns/element   checksum c07c141c5b6590dc
+ewma     gen_ewma           N=10000000  min   3.1956  median   3.1973 ns/element   checksum 235f20cec927a66f
+ewma     hand_ewma          N=10000000  min   3.1954  median   3.1982 ns/element   checksum 235f20cec927a66f
+rmean    gen_rmean          N=10000000  min   5.4816  median   5.4835 ns/element   checksum b9de7ee58d5152fa
+rmean    hand_rmean         N=10000000  min   5.4808  median   5.4834 ns/element   checksum b9de7ee58d5152fa
+rstd     gen_rstd           N=10000000  min  16.3351  median  16.3727 ns/element   checksum 8d8d16ecac002231
+rvar     gen_rvar           N=10000000  min  10.8771  median  10.8819 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_plain     N=10000000  min  10.8772  median  10.8850 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_lazy      N=10000000  min  10.8767  median  10.8838 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_mask      N=10000000  min  10.8795  median  10.8829 ns/element   checksum cf85e9e15bc11aef
+clip     gen_clip           N=10000000  min   1.4795  median   1.4815 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_plain     N=10000000  min   1.4790  median   1.4811 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_lazy      N=10000000  min   1.4806  median   1.4816 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_mask      N=10000000  min   1.4804  median   1.4818 ns/element   checksum 495d900eb7811e4e
+clip     hand_clip          N=10000000  min   1.4801  median   1.4831 ns/element   checksum 495d900eb7811e4e
+fwhere   gen_fwhere         N=10000000  min   2.4511  median   2.4529 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_plain   N=10000000  min   2.4505  median   2.4541 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_lazy    N=10000000  min   5.2383  median   5.2446 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_mask    N=10000000  min   2.4502  median   2.4520 ns/element   checksum ddcfadc94ad89599
+-- N = 4096 --
+sum      gen_sum8           N=4096      min   0.2429  median   0.2430 ns/element   checksum c043e809269a9ba8
+sum      hand_sum8          N=4096      min   0.2465  median   0.2466 ns/element   checksum c043e809269a9ba8
+sum      naive_sum_strict   N=4096      min   1.1572  median   1.1575 ns/element   checksum c043e809269a9ba9
+sum      naive_sum_fast     N=4096      min   0.2914  median   0.2915 ns/element   checksum c043e809269a9b9e
+dot      gen_dot            N=4096      min   0.4908  median   0.4916 ns/element   checksum c01c0c2df6e399fd
+dot      hand_dot           N=4096      min   0.5421  median   0.5428 ns/element   checksum c01c0c2df6e399fd
+dot      naive_dot_strict   N=4096      min   1.1583  median   1.1586 ns/element   checksum c01c0c2df6e39a1d
+dot      naive_dot_fast     N=4096      min   0.3794  median   0.3815 ns/element   checksum c01c0c2df6e39a18
+ewma     gen_ewma           N=4096      min   3.0888  median   3.0894 ns/element   checksum 6c10ec80fb38b2be
+ewma     hand_ewma          N=4096      min   3.0888  median   3.0896 ns/element   checksum 6c10ec80fb38b2be
+rmean    gen_rmean          N=4096      min   5.4554  median   5.4560 ns/element   checksum e31d8f60b3aa7010
+rmean    hand_rmean         N=4096      min   5.4556  median   5.4566 ns/element   checksum e31d8f60b3aa7010
+rstd     gen_rstd           N=4096      min  16.3000  median  16.3346 ns/element   checksum c9b33e54cb22eafb
+rvar     gen_rvar           N=4096      min  10.8103  median  10.8150 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_plain     N=4096      min  10.8111  median  10.8179 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_lazy      N=4096      min  10.8106  median  10.8127 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_mask      N=4096      min  10.8122  median  10.8180 ns/element   checksum 820cc27c8aea38b1
+clip     gen_clip           N=4096      min   1.1612  median   1.1617 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_plain     N=4096      min   1.1613  median   1.1615 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_lazy      N=4096      min   1.1611  median   1.1615 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_mask      N=4096      min   1.1612  median   1.1617 ns/element   checksum bbdb068d7ce00e09
+clip     hand_clip          N=4096      min   1.1610  median   1.1616 ns/element   checksum bbdb068d7ce00e09
+fwhere   gen_fwhere         N=4096      min   0.7350  median   0.7359 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_plain   N=4096      min   0.7307  median   0.7362 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_lazy    N=4096      min   3.2942  median   3.3246 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_mask    N=4096      min   0.7295  median   0.7353 ns/element   checksum 2cd797451456b410
+=== C benchmark, clang -O2 -march=native -std=c11 -ffp-contract=off -fno-fast-math (clang version 21.1.8 (https://github.com/conda-forge/clangdev-feedstock 0586bae95bd818412431982353f925478061d031)), pinned to cpu 12 ===
+    (naive_*_fast is compiled with -O2 -march=native -ffast-math instead of the strict flags)
+-- N = 10000000 --
+sum      gen_sum8           N=10000000  min   0.6989  median   0.7002 ns/element   checksum 409e6f7077c6e926
+sum      hand_sum8          N=10000000  min   0.7073  median   0.7099 ns/element   checksum 409e6f7077c6e926
+sum      naive_sum_strict   N=10000000  min   1.2696  median   1.2706 ns/element   checksum 409e6f7077c6ea0f
+sum      naive_sum_fast     N=10000000  min   0.6494  median   0.6501 ns/element   checksum 409e6f7077c6e9d5
+dot      gen_dot            N=10000000  min   1.1910  median   1.1993 ns/element   checksum c07c141c5b6595dc
+dot      hand_dot           N=10000000  min   1.2331  median   1.2391 ns/element   checksum c07c141c5b6595dc
+dot      naive_dot_strict   N=10000000  min   1.4385  median   1.4415 ns/element   checksum c07c141c5b6593a3
+dot      naive_dot_fast     N=10000000  min   1.1045  median   1.1054 ns/element   checksum c07c141c5b659378
+ewma     gen_ewma           N=10000000  min   3.2095  median   3.2113 ns/element   checksum 235f20cec927a66f
+ewma     hand_ewma          N=10000000  min   3.2092  median   3.2113 ns/element   checksum 235f20cec927a66f
+rmean    gen_rmean          N=10000000  min   5.4427  median   5.4451 ns/element   checksum b9de7ee58d5152fa
+rmean    hand_rmean         N=10000000  min   5.4423  median   5.4441 ns/element   checksum b9de7ee58d5152fa
+rstd     gen_rstd           N=10000000  min  16.3119  median  16.3183 ns/element   checksum 8d8d16ecac002231
+rvar     gen_rvar           N=10000000  min  10.8747  median  10.8776 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_plain     N=10000000  min  10.8730  median  10.8772 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_lazy      N=10000000  min  10.8736  median  10.8775 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_mask      N=10000000  min  10.8724  median  10.8760 ns/element   checksum cf85e9e15bc11aef
+clip     gen_clip           N=10000000  min   1.3989  median   1.3997 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_plain     N=10000000  min   1.3985  median   1.4008 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_lazy      N=10000000  min   1.3984  median   1.4006 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_mask      N=10000000  min   1.3985  median   1.3999 ns/element   checksum 495d900eb7811e4e
+clip     hand_clip          N=10000000  min   1.3980  median   1.3999 ns/element   checksum 495d900eb7811e4e
+fwhere   gen_fwhere         N=10000000  min   2.4540  median   2.4572 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_plain   N=10000000  min   2.4511  median   2.4548 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_lazy    N=10000000  min   5.0059  median   5.0097 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_mask    N=10000000  min   2.4525  median   2.4574 ns/element   checksum ddcfadc94ad89599
+-- N = 4096 --
+sum      gen_sum8           N=4096      min   0.2431  median   0.2433 ns/element   checksum c043e809269a9ba8
+sum      hand_sum8          N=4096      min   0.2437  median   0.2439 ns/element   checksum c043e809269a9ba8
+sum      naive_sum_strict   N=4096      min   1.1572  median   1.1575 ns/element   checksum c043e809269a9ba9
+sum      naive_sum_fast     N=4096      min   0.0986  median   0.0986 ns/element   checksum c043e809269a9baa
+dot      gen_dot            N=4096      min   0.4855  median   0.4903 ns/element   checksum c01c0c2df6e399fd
+dot      hand_dot           N=4096      min   0.5549  median   0.5576 ns/element   checksum c01c0c2df6e399fd
+dot      naive_dot_strict   N=4096      min   1.1586  median   1.1589 ns/element   checksum c01c0c2df6e39a1d
+dot      naive_dot_fast     N=4096      min   0.2471  median   0.2495 ns/element   checksum c01c0c2df6e39a18
+ewma     gen_ewma           N=4096      min   3.1043  median   3.1047 ns/element   checksum 6c10ec80fb38b2be
+ewma     hand_ewma          N=4096      min   3.1045  median   3.1053 ns/element   checksum 6c10ec80fb38b2be
+rmean    gen_rmean          N=4096      min   5.4085  median   5.4103 ns/element   checksum e31d8f60b3aa7010
+rmean    hand_rmean         N=4096      min   5.4078  median   5.4118 ns/element   checksum e31d8f60b3aa7010
+rstd     gen_rstd           N=4096      min  16.2832  median  16.2897 ns/element   checksum c9b33e54cb22eafb
+rvar     gen_rvar           N=4096      min  10.8209  median  10.8250 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_plain     N=4096      min  10.8212  median  10.8249 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_lazy      N=4096      min  10.8223  median  10.8254 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_mask      N=4096      min  10.8219  median  10.8266 ns/element   checksum 820cc27c8aea38b1
+clip     gen_clip           N=4096      min   0.3920  median   0.3926 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_plain     N=4096      min   0.3912  median   0.3925 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_lazy      N=4096      min   0.3917  median   0.3925 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_mask      N=4096      min   0.3917  median   0.3924 ns/element   checksum bbdb068d7ce00e09
+clip     hand_clip          N=4096      min   0.3915  median   0.3924 ns/element   checksum bbdb068d7ce00e09
+fwhere   gen_fwhere         N=4096      min   0.5808  median   0.5822 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_plain   N=4096      min   0.5814  median   0.5819 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_lazy    N=4096      min   0.6960  median   0.7003 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_mask    N=4096      min   0.5811  median   0.5818 ns/element   checksum 2cd797451456b410
+=== C benchmark, gcc -O2 -std=c11 -ffp-contract=off -fno-fast-math (gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0), pinned to cpu 12 ===
+    (naive_*_fast is compiled with -O2 -ffast-math instead of the strict flags)
+-- N = 10000000 --
+sum      gen_sum8           N=10000000  min   0.6762  median   0.6781 ns/element   checksum 409e6f7077c6e926
+sum      hand_sum8          N=10000000  min   0.7314  median   0.7322 ns/element   checksum 409e6f7077c6e926
+sum      naive_sum_strict   N=10000000  min   1.2632  median   1.2650 ns/element   checksum 409e6f7077c6ea0f
+sum      naive_sum_fast     N=10000000  min   1.2632  median   1.2652 ns/element   checksum 409e6f7077c6ea0f
+dot      gen_dot            N=10000000  min   1.1164  median   1.1199 ns/element   checksum c07c141c5b6595dc
+dot      hand_dot           N=10000000  min   1.2048  median   1.2060 ns/element   checksum c07c141c5b6595dc
+dot      naive_dot_strict   N=10000000  min   1.4341  median   1.4359 ns/element   checksum c07c141c5b6593a3
+dot      naive_dot_fast     N=10000000  min   1.4333  median   1.4354 ns/element   checksum c07c141c5b6593a3
+ewma     gen_ewma           N=10000000  min   3.1971  median   3.1983 ns/element   checksum 235f20cec927a66f
+ewma     hand_ewma          N=10000000  min   3.1967  median   3.1987 ns/element   checksum 235f20cec927a66f
+rmean    gen_rmean          N=10000000  min   5.4800  median   5.4815 ns/element   checksum b9de7ee58d5152fa
+rmean    hand_rmean         N=10000000  min   5.4780  median   5.4816 ns/element   checksum b9de7ee58d5152fa
+rstd     gen_rstd           N=10000000  min  16.3114  median  16.3165 ns/element   checksum 8d8d16ecac002231
+rvar     gen_rvar           N=10000000  min  10.8919  median  10.8954 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_plain     N=10000000  min  10.8897  median  10.8933 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_lazy      N=10000000  min  10.8862  median  10.8932 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_mask      N=10000000  min  10.9966  median  11.0003 ns/element   checksum cf85e9e15bc11aef
+clip     gen_clip           N=10000000  min   2.5088  median   2.5106 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_plain     N=10000000  min   2.5049  median   2.5108 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_lazy      N=10000000  min   3.8224  median   3.8291 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_mask      N=10000000  min   3.0958  median   3.1009 ns/element   checksum 495d900eb7811e4e
+clip     hand_clip          N=10000000  min   3.8225  median   3.8408 ns/element   checksum 495d900eb7811e4e
+fwhere   gen_fwhere         N=10000000  min   5.4524  median   5.4557 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_plain   N=10000000  min   5.4475  median   5.4606 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_lazy    N=10000000  min   5.2690  median   5.2710 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_mask    N=10000000  min   2.6923  median   2.6944 ns/element   checksum ddcfadc94ad89599
+-- N = 4096 --
+sum      gen_sum8           N=4096      min   0.1946  median   0.1946 ns/element   checksum c043e809269a9ba8
+sum      hand_sum8          N=4096      min   0.4863  median   0.4866 ns/element   checksum c043e809269a9ba8
+sum      naive_sum_strict   N=4096      min   1.1599  median   1.1601 ns/element   checksum c043e809269a9ba9
+sum      naive_sum_fast     N=4096      min   1.1598  median   1.1600 ns/element   checksum c043e809269a9ba9
+dot      gen_dot            N=4096      min   0.4268  median   0.4280 ns/element   checksum c01c0c2df6e399fd
+dot      hand_dot           N=4096      min   0.6008  median   0.6018 ns/element   checksum c01c0c2df6e399fd
+dot      naive_dot_strict   N=4096      min   1.1606  median   1.1610 ns/element   checksum c01c0c2df6e39a1d
+dot      naive_dot_fast     N=4096      min   1.1607  median   1.1609 ns/element   checksum c01c0c2df6e39a1d
+ewma     gen_ewma           N=4096      min   3.0887  median   3.0901 ns/element   checksum 6c10ec80fb38b2be
+ewma     hand_ewma          N=4096      min   3.0894  median   3.0900 ns/element   checksum 6c10ec80fb38b2be
+rmean    gen_rmean          N=4096      min   5.4476  median   5.4485 ns/element   checksum e31d8f60b3aa7010
+rmean    hand_rmean         N=4096      min   5.4469  median   5.4482 ns/element   checksum e31d8f60b3aa7010
+rstd     gen_rstd           N=4096      min  16.2982  median  16.3031 ns/element   checksum c9b33e54cb22eafb
+rvar     gen_rvar           N=4096      min  10.8466  median  10.8498 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_plain     N=4096      min  10.8452  median  10.8465 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_lazy      N=4096      min  10.8469  median  10.8492 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_mask      N=4096      min  10.8911  median  10.8931 ns/element   checksum 820cc27c8aea38b1
+clip     gen_clip           N=4096      min   2.3197  median   2.3200 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_plain     N=4096      min   2.3192  median   2.3202 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_lazy      N=4096      min   1.2374  median   1.2721 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_mask      N=4096      min   2.9042  median   2.9054 ns/element   checksum bbdb068d7ce00e09
+clip     hand_clip          N=4096      min   1.2570  median   1.2756 ns/element   checksum bbdb068d7ce00e09
+fwhere   gen_fwhere         N=4096      min   3.7047  median   3.7291 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_plain   N=4096      min   3.5891  median   3.6120 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_lazy    N=4096      min   1.8862  median   1.9012 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_mask    N=4096      min   1.9905  median   1.9919 ns/element   checksum 2cd797451456b410
+=== C benchmark, gcc -O2 -march=native -std=c11 -ffp-contract=off -fno-fast-math (gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0), pinned to cpu 12 ===
+    (naive_*_fast is compiled with -O2 -march=native -ffast-math instead of the strict flags)
+-- N = 10000000 --
+sum      gen_sum8           N=10000000  min   0.6491  median   0.6500 ns/element   checksum 409e6f7077c6e926
+sum      hand_sum8          N=10000000  min   0.6490  median   0.6499 ns/element   checksum 409e6f7077c6e926
+sum      naive_sum_strict   N=10000000  min   1.2633  median   1.2653 ns/element   checksum 409e6f7077c6ea0f
+sum      naive_sum_fast     N=10000000  min   1.2631  median   1.2641 ns/element   checksum 409e6f7077c6ea0f
+dot      gen_dot            N=10000000  min   1.1173  median   1.1189 ns/element   checksum c07c141c5b6595dc
+dot      hand_dot           N=10000000  min   1.1145  median   1.1158 ns/element   checksum c07c141c5b6595dc
+dot      naive_dot_strict   N=10000000  min   1.4511  median   1.4522 ns/element   checksum c07c141c5b6593a3
+dot      naive_dot_fast     N=10000000  min   2.0773  median   2.0787 ns/element   checksum c07c141c5b65937a
+ewma     gen_ewma           N=10000000  min   3.2112  median   3.2145 ns/element   checksum 235f20cec927a66f
+ewma     hand_ewma          N=10000000  min   3.2119  median   3.2132 ns/element   checksum 235f20cec927a66f
+rmean    gen_rmean          N=10000000  min   5.4689  median   5.4710 ns/element   checksum b9de7ee58d5152fa
+rmean    hand_rmean         N=10000000  min   5.4689  median   5.4699 ns/element   checksum b9de7ee58d5152fa
+rstd     gen_rstd           N=10000000  min  16.3336  median  16.3369 ns/element   checksum 8d8d16ecac002231
+rvar     gen_rvar           N=10000000  min  10.9102  median  10.9158 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_plain     N=10000000  min  10.9117  median  10.9155 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_lazy      N=10000000  min  10.9117  median  10.9190 ns/element   checksum cf85e9e15bc11aef
+rvar     gen_rvar_mask      N=10000000  min  11.0155  median  11.0184 ns/element   checksum cf85e9e15bc11aef
+clip     gen_clip           N=10000000  min   1.7863  median   1.7902 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_plain     N=10000000  min   1.7871  median   1.7915 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_lazy      N=10000000  min   3.7463  median   3.7778 ns/element   checksum 495d900eb7811e4e
+clip     gen_clip_mask      N=10000000  min   3.0946  median   3.1008 ns/element   checksum 495d900eb7811e4e
+clip     hand_clip          N=10000000  min   3.7412  median   3.7641 ns/element   checksum 495d900eb7811e4e
+fwhere   gen_fwhere         N=10000000  min   5.4584  median   5.4763 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_plain   N=10000000  min   5.4681  median   5.4777 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_lazy    N=10000000  min   5.4282  median   5.4320 ns/element   checksum ddcfadc94ad89599
+fwhere   gen_fwhere_mask    N=10000000  min   2.6917  median   2.6945 ns/element   checksum ddcfadc94ad89599
+-- N = 4096 --
+sum      gen_sum8           N=4096      min   0.1479  median   0.1479 ns/element   checksum c043e809269a9ba8
+sum      hand_sum8          N=4096      min   0.1479  median   0.1479 ns/element   checksum c043e809269a9ba8
+sum      naive_sum_strict   N=4096      min   1.1599  median   1.1601 ns/element   checksum c043e809269a9ba9
+sum      naive_sum_fast     N=4096      min   1.1599  median   1.1603 ns/element   checksum c043e809269a9ba9
+dot      gen_dot            N=4096      min   0.2508  median   0.2532 ns/element   checksum c01c0c2df6e399fd
+dot      hand_dot           N=4096      min   0.2533  median   0.2549 ns/element   checksum c01c0c2df6e399fd
+dot      naive_dot_strict   N=4096      min   1.1607  median   1.1610 ns/element   checksum c01c0c2df6e39a1d
+dot      naive_dot_fast     N=4096      min   1.9321  median   1.9324 ns/element   checksum c01c0c2df6e39a0d
+ewma     gen_ewma           N=4096      min   3.0983  median   3.0988 ns/element   checksum 6c10ec80fb38b2be
+ewma     hand_ewma          N=4096      min   3.0982  median   3.0990 ns/element   checksum 6c10ec80fb38b2be
+rmean    gen_rmean          N=4096      min   5.4394  median   5.4408 ns/element   checksum e31d8f60b3aa7010
+rmean    hand_rmean         N=4096      min   5.4379  median   5.4393 ns/element   checksum e31d8f60b3aa7010
+rstd     gen_rstd           N=4096      min  16.3089  median  16.3113 ns/element   checksum c9b33e54cb22eafb
+rvar     gen_rvar           N=4096      min  10.8276  median  10.8316 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_plain     N=4096      min  10.8285  median  10.8309 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_lazy      N=4096      min  10.8277  median  10.8320 ns/element   checksum 820cc27c8aea38b1
+rvar     gen_rvar_mask      N=4096      min  10.9107  median  10.9133 ns/element   checksum 820cc27c8aea38b1
+clip     gen_clip           N=4096      min   1.5476  median   1.5481 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_plain     N=4096      min   1.5476  median   1.5479 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_lazy      N=4096      min   1.4222  median   1.4378 ns/element   checksum bbdb068d7ce00e09
+clip     gen_clip_mask      N=4096      min   2.9050  median   2.9062 ns/element   checksum bbdb068d7ce00e09
+clip     hand_clip          N=4096      min   1.3892  median   1.4177 ns/element   checksum bbdb068d7ce00e09
+fwhere   gen_fwhere         N=4096      min   3.7815  median   3.7925 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_plain   N=4096      min   3.7744  median   3.7923 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_lazy    N=4096      min   1.9185  median   1.9412 ns/element   checksum 2cd797451456b410
+fwhere   gen_fwhere_mask    N=4096      min   1.9760  median   1.9769 ns/element   checksum 2cd797451456b410
+
+=== do the eight lanes become vector instructions? per function: instructions, packed-double instructions (addpd/mulpd/vaddpd/...), scalar ones (addsd/mulsd/...), fused multiply-adds ===
+clang-O2         gen_sum8           instructions=63   packed_pd=6   (of which 256-bit ymm=0  ) scalar_sd=10  fma=0  cond_jumps=9  blend_or_mask=0
+clang-O2         hand_sum8          instructions=62   packed_pd=6   (of which 256-bit ymm=0  ) scalar_sd=12  fma=0  cond_jumps=7  blend_or_mask=0
+clang-O2         naive_sum_strict   instructions=37   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=9   fma=0  cond_jumps=5  blend_or_mask=0
+clang-O2         naive_sum_fast     instructions=33   packed_pd=3   (of which 256-bit ymm=0  ) scalar_sd=2   fma=0  cond_jumps=4  blend_or_mask=0
+clang-O2         gen_dot            instructions=87   packed_pd=11  (of which 256-bit ymm=0  ) scalar_sd=15  fma=0  cond_jumps=9  blend_or_mask=0
+clang-O2         hand_dot           instructions=82   packed_pd=12  (of which 256-bit ymm=0  ) scalar_sd=11  fma=0  cond_jumps=7  blend_or_mask=0
+clang-O2         naive_dot_strict   instructions=44   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=10  fma=0  cond_jumps=5  blend_or_mask=0
+clang-O2         naive_dot_fast     instructions=39   packed_pd=5   (of which 256-bit ymm=0  ) scalar_sd=3   fma=0  cond_jumps=4  blend_or_mask=0
+clang-O2         gen_ewma           instructions=34   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=10  fma=0  cond_jumps=4  blend_or_mask=0
+clang-O2         gen_rmean          instructions=80   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=15  fma=0  cond_jumps=8  blend_or_mask=0
+clang-O2         gen_rstd           instructions=72   packed_pd=3   (of which 256-bit ymm=0  ) scalar_sd=13  fma=0  cond_jumps=5  blend_or_mask=4
+clang-O2         gen_rvar           instructions=70   packed_pd=3   (of which 256-bit ymm=0  ) scalar_sd=11  fma=0  cond_jumps=5  blend_or_mask=4
+clang-O2         gen_rvar_plain     instructions=70   packed_pd=3   (of which 256-bit ymm=0  ) scalar_sd=11  fma=0  cond_jumps=5  blend_or_mask=4
+clang-O2         gen_rvar_lazy      instructions=70   packed_pd=3   (of which 256-bit ymm=0  ) scalar_sd=11  fma=0  cond_jumps=5  blend_or_mask=4
+clang-O2         gen_rvar_mask      instructions=70   packed_pd=3   (of which 256-bit ymm=0  ) scalar_sd=11  fma=0  cond_jumps=5  blend_or_mask=4
+clang-O2         gen_clip           instructions=58   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=12
+clang-O2         gen_clip_plain     instructions=58   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=12
+clang-O2         gen_clip_lazy      instructions=58   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=12
+clang-O2         gen_clip_mask      instructions=58   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=12
+clang-O2         hand_clip          instructions=58   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=12
+clang-O2         gen_fwhere         instructions=46   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=5  blend_or_mask=0
+clang-O2         gen_fwhere_plain   instructions=46   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=5  blend_or_mask=0
+clang-O2         gen_fwhere_lazy    instructions=34   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=6  blend_or_mask=0
+clang-O2         gen_fwhere_mask    instructions=45   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=0
+clang-O2-native  gen_sum8           instructions=90   packed_pd=12  (of which 256-bit ymm=0  ) scalar_sd=14  fma=0  cond_jumps=11 blend_or_mask=3
+clang-O2-native  hand_sum8          instructions=102  packed_pd=12  (of which 256-bit ymm=0  ) scalar_sd=16  fma=0  cond_jumps=10 blend_or_mask=0
+clang-O2-native  naive_sum_strict   instructions=37   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=9   fma=0  cond_jumps=5  blend_or_mask=0
+clang-O2-native  naive_sum_fast     instructions=62   packed_pd=10  (of which 256-bit ymm=8  ) scalar_sd=3   fma=0  cond_jumps=8  blend_or_mask=0
+clang-O2-native  gen_dot            instructions=86   packed_pd=9   (of which 256-bit ymm=0  ) scalar_sd=19  fma=0  cond_jumps=9  blend_or_mask=2
+clang-O2-native  hand_dot           instructions=90   packed_pd=9   (of which 256-bit ymm=1  ) scalar_sd=23  fma=0  cond_jumps=7  blend_or_mask=0
+clang-O2-native  naive_dot_strict   instructions=56   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=18  fma=0  cond_jumps=5  blend_or_mask=0
+clang-O2-native  naive_dot_fast     instructions=68   packed_pd=5   (of which 256-bit ymm=3  ) scalar_sd=2   fma=6  cond_jumps=8  blend_or_mask=0
+clang-O2-native  gen_ewma           instructions=48   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=16  fma=0  cond_jumps=5  blend_or_mask=0
+clang-O2-native  gen_rmean          instructions=109  packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=25  fma=0  cond_jumps=11 blend_or_mask=0
+clang-O2-native  gen_rstd           instructions=141  packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=57  fma=0  cond_jumps=8  blend_or_mask=12
+clang-O2-native  gen_rvar           instructions=135  packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=51  fma=0  cond_jumps=8  blend_or_mask=12
+clang-O2-native  gen_rvar_plain     instructions=135  packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=51  fma=0  cond_jumps=8  blend_or_mask=12
+clang-O2-native  gen_rvar_lazy      instructions=135  packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=51  fma=0  cond_jumps=8  blend_or_mask=12
+clang-O2-native  gen_rvar_mask      instructions=135  packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=51  fma=0  cond_jumps=8  blend_or_mask=12
+clang-O2-native  gen_clip           instructions=75   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=8  blend_or_mask=24
+clang-O2-native  gen_clip_plain     instructions=75   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=8  blend_or_mask=24
+clang-O2-native  gen_clip_lazy      instructions=75   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=8  blend_or_mask=24
+clang-O2-native  gen_clip_mask      instructions=75   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=8  blend_or_mask=24
+clang-O2-native  hand_clip          instructions=75   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=8  blend_or_mask=24
+clang-O2-native  gen_fwhere         instructions=64   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=9  blend_or_mask=5
+clang-O2-native  gen_fwhere_plain   instructions=64   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=9  blend_or_mask=5
+clang-O2-native  gen_fwhere_lazy    instructions=59   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=9  blend_or_mask=0
+clang-O2-native  gen_fwhere_mask    instructions=63   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=8  blend_or_mask=5
+gcc-O2           gen_sum8           instructions=68   packed_pd=4   (of which 256-bit ymm=0  ) scalar_sd=10  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2           hand_sum8          instructions=79   packed_pd=1   (of which 256-bit ymm=0  ) scalar_sd=10  fma=0  cond_jumps=8  blend_or_mask=0
+gcc-O2           naive_sum_strict   instructions=22   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=3   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2           naive_sum_fast     instructions=22   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=2   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2           gen_dot            instructions=72   packed_pd=8   (of which 256-bit ymm=0  ) scalar_sd=9   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2           hand_dot           instructions=72   packed_pd=2   (of which 256-bit ymm=0  ) scalar_sd=9   fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2           naive_dot_strict   instructions=17   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=2   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2           naive_dot_fast     instructions=17   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=2   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2           gen_ewma           instructions=16   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=4   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2           gen_rmean          instructions=35   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=5   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2           gen_rstd           instructions=66   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=19  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2           gen_rvar           instructions=62   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2           gen_rvar_plain     instructions=62   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2           gen_rvar_lazy      instructions=62   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2           gen_rvar_mask      instructions=72   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2           gen_clip           instructions=21   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=4
+gcc-O2           gen_clip_plain     instructions=21   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=4
+gcc-O2           gen_clip_lazy      instructions=23   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=2
+gcc-O2           gen_clip_mask      instructions=41   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2           hand_clip          instructions=23   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=2
+gcc-O2           gen_fwhere         instructions=15   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=3  blend_or_mask=0
+gcc-O2           gen_fwhere_plain   instructions=15   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=3  blend_or_mask=0
+gcc-O2           gen_fwhere_lazy    instructions=19   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2           gen_fwhere_mask    instructions=23   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2-native    gen_sum8           instructions=59   packed_pd=2   (of which 256-bit ymm=2  ) scalar_sd=10  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2-native    hand_sum8          instructions=57   packed_pd=2   (of which 256-bit ymm=2  ) scalar_sd=10  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2-native    naive_sum_strict   instructions=22   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=3   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    naive_sum_fast     instructions=22   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=2   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    gen_dot            instructions=54   packed_pd=4   (of which 256-bit ymm=4  ) scalar_sd=9   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    hand_dot           instructions=54   packed_pd=4   (of which 256-bit ymm=4  ) scalar_sd=9   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    naive_dot_strict   instructions=17   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=2   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2-native    naive_dot_fast     instructions=25   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=3  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    gen_ewma           instructions=15   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=4   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2-native    gen_rmean          instructions=32   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=5   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    gen_rstd           instructions=59   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=19  fma=0  cond_jumps=6  blend_or_mask=0
+gcc-O2-native    gen_rvar           instructions=57   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=4  blend_or_mask=4
+gcc-O2-native    gen_rvar_plain     instructions=57   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=4  blend_or_mask=4
+gcc-O2-native    gen_rvar_lazy      instructions=57   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=4  blend_or_mask=4
+gcc-O2-native    gen_rvar_mask      instructions=67   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=17  fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    gen_clip           instructions=14   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=4
+gcc-O2-native    gen_clip_plain     instructions=14   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=4
+gcc-O2-native    gen_clip_lazy      instructions=20   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=2
+gcc-O2-native    gen_clip_mask      instructions=41   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=0
+gcc-O2-native    hand_clip          instructions=20   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=2
+gcc-O2-native    gen_fwhere         instructions=15   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=3  blend_or_mask=0
+gcc-O2-native    gen_fwhere_plain   instructions=15   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=3  blend_or_mask=0
+gcc-O2-native    gen_fwhere_lazy    instructions=19   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=4  blend_or_mask=0
+gcc-O2-native    gen_fwhere_mask    instructions=23   packed_pd=0   (of which 256-bit ymm=0  ) scalar_sd=0   fma=0  cond_jumps=2  blend_or_mask=0
+
+=== assembly, clang-O2: gen_sum8 (whole function) ===
+gen_sum8:
+  cmpq  $8, %rsi
+  jae  .LBB0_11
+  xorpd  %xmm0, %xmm0
+  xorpd  %xmm2, %xmm2
+  xorpd  %xmm1, %xmm1
+  xorpd  %xmm3, %xmm3
+  xorpd  %xmm4, %xmm4
+  jmp  .LBB0_2
+.LBB0_11:
+  movq  %rsi, %rax
+  shrq  $3, %rax
+  xorpd  %xmm0, %xmm0
+  xorpd  %xmm1, %xmm1
+  movq  %rdi, %rcx
+  xorpd  %xmm2, %xmm2
+  xorpd  %xmm3, %xmm3
+  xorpd  %xmm4, %xmm4
+.LBB0_12:
+  addsd  (%rcx), %xmm1
+  movupd  8(%rcx), %xmm5
+  movupd  24(%rcx), %xmm6
+  addpd  %xmm6, %xmm0
+  movupd  40(%rcx), %xmm6
+  movapd  %xmm5, %xmm7
+  shufpd  $1, %xmm6, %xmm7
+  addpd  %xmm7, %xmm3
+  movsd  %xmm5, %xmm6
+  addpd  %xmm6, %xmm4
+  addsd  56(%rcx), %xmm2
+  addq  $64, %rcx
+  decq  %rax
+  jne  .LBB0_12
+.LBB0_2:
+  movq  %rsi, %rax
+  andq  $7, %rax
+  je  .LBB0_10
+  andq  $-8, %rsi
+  addsd  (%rdi,%rsi,8), %xmm1
+  cmpl  $1, %eax
+  je  .LBB0_10
+  addsd  8(%rdi,%rsi,8), %xmm1
+  cmpl  $2, %eax
+  je  .LBB0_10
+  addsd  16(%rdi,%rsi,8), %xmm1
+  cmpl  $3, %eax
+  je  .LBB0_10
+  addsd  24(%rdi,%rsi,8), %xmm1
+  cmpl  $4, %eax
+  je  .LBB0_10
+  addsd  32(%rdi,%rsi,8), %xmm1
+  cmpl  $5, %eax
+  je  .LBB0_10
+  addsd  40(%rdi,%rsi,8), %xmm1
+  cmpl  $6, %eax
+  je  .LBB0_10
+  addsd  48(%rdi,%rsi,8), %xmm1
+.LBB0_10:
+  unpcklpd  %xmm2, %xmm1
+  addpd  %xmm1, %xmm4
+  addpd  %xmm3, %xmm0
+  addpd  %xmm4, %xmm0
+  movapd  %xmm0, %xmm1
+  unpckhpd  %xmm0, %xmm1
+  addsd  %xmm0, %xmm1
+  movsd  %xmm1, (%rdx)
+  xorl  %eax, %eax
+  retq
+
+=== assembly, clang-O2: gen_dot (whole function) ===
+gen_dot:
+  xorpd  %xmm0, %xmm0
+  xorpd  %xmm1, %xmm1
+  xorpd  %xmm2, %xmm2
+  xorpd  %xmm3, %xmm3
+  cmpq  $8, %rsi
+  jb  .LBB0_3
+  movq  %rsi, %rax
+  shrq  $3, %rax
+  xorl  %ecx, %ecx
+.LBB0_2:
+  movupd  8(%rdi,%rcx), %xmm4
+  movupd  24(%rdi,%rcx), %xmm5
+  movupd  40(%rdi,%rcx), %xmm6
+  movupd  8(%rdx,%rcx), %xmm7
+  movupd  24(%rdx,%rcx), %xmm8
+  mulpd  %xmm5, %xmm8
+  addpd  %xmm8, %xmm0
+  movupd  40(%rdx,%rcx), %xmm5
+  movapd  %xmm6, %xmm8
+  movsd  %xmm4, %xmm8
+  movapd  %xmm5, %xmm9
+  movsd  %xmm7, %xmm9
+  mulpd  %xmm8, %xmm9
+  addpd  %xmm9, %xmm2
+  shufpd  $1, %xmm6, %xmm4
+  shufpd  $1, %xmm5, %xmm7
+  mulpd  %xmm4, %xmm7
+  movsd  56(%rdi,%rcx), %xmm4
+  movhpd  (%rdi,%rcx), %xmm4
+  addpd  %xmm7, %xmm1
+  movsd  56(%rdx,%rcx), %xmm5
+  movhpd  (%rdx,%rcx), %xmm5
+  mulpd  %xmm4, %xmm5
+  addpd  %xmm5, %xmm3
+  addq  $64, %rcx
+  decq  %rax
+  jne  .LBB0_2
+.LBB0_3:
+  movq  %rsi, %rax
+  movapd  %xmm3, %xmm5
+  unpckhpd  %xmm3, %xmm5
+  andq  $7, %rax
+  je  .LBB0_4
+  andq  $-8, %rsi
+  movsd  (%rdi,%rsi,8), %xmm4
+  mulsd  (%rdx,%rsi,8), %xmm4
+  addsd  %xmm5, %xmm4
+  cmpl  $1, %eax
+  je  .LBB0_5
+  movsd  8(%rdi,%rsi,8), %xmm5
+  mulsd  8(%rdx,%rsi,8), %xmm5
+  addsd  %xmm5, %xmm4
+  cmpl  $2, %eax
+  je  .LBB0_5
+  movsd  16(%rdi,%rsi,8), %xmm5
+  mulsd  16(%rdx,%rsi,8), %xmm5
+  addsd  %xmm5, %xmm4
+  cmpl  $3, %eax
+  je  .LBB0_5
+  movsd  24(%rdi,%rsi,8), %xmm5
+  mulsd  24(%rdx,%rsi,8), %xmm5
+  addsd  %xmm5, %xmm4
+  cmpl  $4, %eax
+  je  .LBB0_5
+  movsd  32(%rdi,%rsi,8), %xmm5
+  mulsd  32(%rdx,%rsi,8), %xmm5
+  addsd  %xmm5, %xmm4
+  cmpl  $5, %eax
+  je  .LBB0_5
+  movsd  40(%rdi,%rsi,8), %xmm5
+  mulsd  40(%rdx,%rsi,8), %xmm5
+  addsd  %xmm5, %xmm4
+  cmpl  $6, %eax
+  je  .LBB0_5
+  movsd  48(%rdi,%rsi,8), %xmm5
+  mulsd  48(%rdx,%rsi,8), %xmm5
+  addsd  %xmm5, %xmm4
+  jmp  .LBB0_5
+.LBB0_4:
+  movapd  %xmm5, %xmm4
+.LBB0_5:
+  unpcklpd  %xmm3, %xmm4
+  addpd  %xmm4, %xmm2
+  addpd  %xmm1, %xmm0
+  addpd  %xmm2, %xmm0
+  movapd  %xmm0, %xmm1
+  unpckhpd  %xmm0, %xmm1
+  addsd  %xmm0, %xmm1
+  movsd  %xmm1, (%r8)
+  xorl  %eax, %eax
+  retq
+
+=== assembly, clang-O2-native: gen_sum8 (whole function) ===
+gen_sum8:
+  cmpq  $8, %rsi
+  jae  .LBB0_2
+  vxorpd  %xmm0, %xmm0, %xmm0
+  vxorpd  %xmm2, %xmm2, %xmm2
+  vxorpd  %xmm1, %xmm1, %xmm1
+  vxorpd  %xmm3, %xmm3, %xmm3
+  vxorpd  %xmm4, %xmm4, %xmm4
+  jmp  .LBB0_6
+.LBB0_2:
+  movq  %rsi, %rcx
+  shrq  $3, %rcx
+  cmpq  $1, %rcx
+  jne  .LBB0_15
+  vxorpd  %xmm0, %xmm0, %xmm0
+  vxorpd  %xmm1, %xmm1, %xmm1
+  xorl  %eax, %eax
+  vxorpd  %xmm2, %xmm2, %xmm2
+  vxorpd  %xmm3, %xmm3, %xmm3
+  vxorpd  %xmm4, %xmm4, %xmm4
+  jmp  .LBB0_4
+.LBB0_15:
+  andq  $-2, %rcx
+  vxorpd  %xmm0, %xmm0, %xmm0
+  vxorpd  %xmm1, %xmm1, %xmm1
+  xorl  %eax, %eax
+  vxorpd  %xmm2, %xmm2, %xmm2
+  vxorpd  %xmm3, %xmm3, %xmm3
+  vxorpd  %xmm4, %xmm4, %xmm4
+.LBB0_16:
+  vaddsd  (%rdi,%rax), %xmm1, %xmm1
+  vaddpd  24(%rdi,%rax), %xmm0, %xmm0
+  vmovupd  8(%rdi,%rax), %xmm5
+  vmovupd  40(%rdi,%rax), %xmm6
+  vmovupd  72(%rdi,%rax), %xmm7
+  vmovupd  104(%rdi,%rax), %xmm8
+  vshufpd  $1, %xmm6, %xmm5, %xmm9
+  vaddpd  %xmm3, %xmm9, %xmm3
+  vblendpd  $1, %xmm5, %xmm6, %xmm5
+  vaddpd  %xmm5, %xmm4, %xmm4
+  vaddsd  56(%rdi,%rax), %xmm2, %xmm2
+  vaddsd  64(%rdi,%rax), %xmm1, %xmm1
+  vaddpd  88(%rdi,%rax), %xmm0, %xmm0
+  vshufpd  $1, %xmm8, %xmm7, %xmm5
+  vaddpd  %xmm5, %xmm3, %xmm3
+  vblendpd  $1, %xmm7, %xmm8, %xmm5
+  vaddpd  %xmm5, %xmm4, %xmm4
+  vaddsd  120(%rdi,%rax), %xmm2, %xmm2
+  subq  $-128, %rax
+  addq  $-2, %rcx
+  jne  .LBB0_16
+.LBB0_4:
+  testb  $8, %sil
+  je  .LBB0_6
+  vaddsd  (%rdi,%rax), %xmm1, %xmm1
+  vaddpd  24(%rdi,%rax), %xmm0, %xmm0
+  vmovupd  8(%rdi,%rax), %xmm5
+  vmovupd  40(%rdi,%rax), %xmm6
+  vshufpd  $1, %xmm6, %xmm5, %xmm7
+  vaddpd  %xmm7, %xmm3, %xmm3
+  vblendpd  $1, %xmm5, %xmm6, %xmm5
+  vaddpd  %xmm5, %xmm4, %xmm4
+  vaddsd  56(%rdi,%rax), %xmm2, %xmm2
+.LBB0_6:
+  movq  %rsi, %rax
+  andq  $7, %rax
+  je  .LBB0_14
+  andq  $-8, %rsi
+  vaddsd  (%rdi,%rsi,8), %xmm1, %xmm1
+  cmpl  $1, %eax
+  je  .LBB0_14
+  vaddsd  8(%rdi,%rsi,8), %xmm1, %xmm1
+  cmpl  $2, %eax
+  je  .LBB0_14
+  vaddsd  16(%rdi,%rsi,8), %xmm1, %xmm1
+  cmpl  $3, %eax
+  je  .LBB0_14
+  vaddsd  24(%rdi,%rsi,8), %xmm1, %xmm1
+  cmpl  $4, %eax
+  je  .LBB0_14
+  vaddsd  32(%rdi,%rsi,8), %xmm1, %xmm1
+  cmpl  $5, %eax
+  je  .LBB0_14
+  vaddsd  40(%rdi,%rsi,8), %xmm1, %xmm1
+  cmpl  $6, %eax
+  je  .LBB0_14
+  vaddsd  48(%rdi,%rsi,8), %xmm1, %xmm1
+.LBB0_14:
+  vunpcklpd  %xmm2, %xmm1, %xmm1
+  vaddpd  %xmm1, %xmm4, %xmm1
+  vaddpd  %xmm3, %xmm0, %xmm0
+  vaddpd  %xmm1, %xmm0, %xmm0
+  vshufpd  $1, %xmm0, %xmm0, %xmm1
+  vaddsd  %xmm0, %xmm1, %xmm0
+  vmovsd  %xmm0, (%rdx)
+  xorl  %eax, %eax
+  retq
+
+=== assembly, clang-O2-native: gen_dot (whole function) ===
+gen_dot:
+  cmpq  $8, %rsi
+  jae  .LBB0_11
+  vxorpd  %xmm0, %xmm0, %xmm0
+  vxorpd  %xmm2, %xmm2, %xmm2
+  vxorpd  %xmm1, %xmm1, %xmm1
+  vxorpd  %xmm3, %xmm3, %xmm3
+  vxorpd  %xmm4, %xmm4, %xmm4
+  jmp  .LBB0_2
+.LBB0_11:
+  movq  %rsi, %rax
+  shrq  $3, %rax
+  vxorpd  %xmm0, %xmm0, %xmm0
+  vxorpd  %xmm1, %xmm1, %xmm1
+  xorl  %ecx, %ecx
+  vxorpd  %xmm2, %xmm2, %xmm2
+  vxorpd  %xmm3, %xmm3, %xmm3
+  vxorpd  %xmm4, %xmm4, %xmm4
+.LBB0_12:
+  vmovsd  (%rdi,%rcx), %xmm5
+  vmulsd  (%rdx,%rcx), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+  vmovupd  8(%rdi,%rcx), %xmm5
+  vmovupd  40(%rdi,%rcx), %xmm6
+  vmovupd  8(%rdx,%rcx), %xmm7
+  vmovupd  40(%rdx,%rcx), %xmm8
+  vblendpd  $1, %xmm5, %xmm6, %xmm9
+  vblendpd  $1, %xmm7, %xmm8, %xmm10
+  vmulpd  %xmm10, %xmm9, %xmm9
+  vaddpd  %xmm4, %xmm9, %xmm4
+  vshufpd  $1, %xmm6, %xmm5, %xmm5
+  vshufpd  $1, %xmm8, %xmm7, %xmm6
+  vmulpd  %xmm6, %xmm5, %xmm5
+  vmovupd  24(%rdi,%rcx), %xmm6
+  vmulpd  24(%rdx,%rcx), %xmm6, %xmm6
+  vaddpd  %xmm5, %xmm3, %xmm3
+  vmovsd  56(%rdi,%rcx), %xmm5
+  vmulsd  56(%rdx,%rcx), %xmm5, %xmm5
+  vaddpd  %xmm6, %xmm0, %xmm0
+  vaddsd  %xmm5, %xmm2, %xmm2
+  addq  $64, %rcx
+  decq  %rax
+  jne  .LBB0_12
+.LBB0_2:
+  movq  %rsi, %rax
+  andq  $7, %rax
+  je  .LBB0_10
+  andq  $-8, %rsi
+  vmovsd  (%rdi,%rsi,8), %xmm5
+  vmulsd  (%rdx,%rsi,8), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+  cmpl  $1, %eax
+  je  .LBB0_10
+  vmovsd  8(%rdi,%rsi,8), %xmm5
+  vmulsd  8(%rdx,%rsi,8), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+  cmpl  $2, %eax
+  je  .LBB0_10
+  vmovsd  16(%rdi,%rsi,8), %xmm5
+  vmulsd  16(%rdx,%rsi,8), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+  cmpl  $3, %eax
+  je  .LBB0_10
+  vmovsd  24(%rdi,%rsi,8), %xmm5
+  vmulsd  24(%rdx,%rsi,8), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+  cmpl  $4, %eax
+  je  .LBB0_10
+  vmovsd  32(%rdi,%rsi,8), %xmm5
+  vmulsd  32(%rdx,%rsi,8), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+  cmpl  $5, %eax
+  je  .LBB0_10
+  vmovsd  40(%rdi,%rsi,8), %xmm5
+  vmulsd  40(%rdx,%rsi,8), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+  cmpl  $6, %eax
+  je  .LBB0_10
+  vmovsd  48(%rdi,%rsi,8), %xmm5
+  vmulsd  48(%rdx,%rsi,8), %xmm5, %xmm5
+  vaddsd  %xmm5, %xmm1, %xmm1
+.LBB0_10:
+  vunpcklpd  %xmm2, %xmm1, %xmm1
+  vaddpd  %xmm1, %xmm4, %xmm1
+  vaddpd  %xmm3, %xmm0, %xmm0
+  vaddpd  %xmm1, %xmm0, %xmm0
+  vshufpd  $1, %xmm0, %xmm0, %xmm1
+  vaddsd  %xmm0, %xmm1, %xmm0
+  vmovsd  %xmm0, (%r8)
+  xorl  %eax, %eax
+  retq
+
+=== assembly, gcc-O2: gen_sum8 (whole function) ===
+gen_sum8:
+  movq  %rsi, %rcx
+  movq  %rdi, %r8
+  shrq  $3, %rcx
+  je  .L6
+  movq  %rdi, %rax
+  movq  %rcx, %rdi
+  pxor  %xmm2, %xmm2
+  movapd  %xmm2, %xmm3
+  salq  $6, %rdi
+  movapd  %xmm2, %xmm4
+  movapd  %xmm2, %xmm1
+  addq  %r8, %rdi
+.L3:
+  movupd  (%rax), %xmm6
+  movupd  16(%rax), %xmm7
+  addq  $64, %rax
+  movupd  -32(%rax), %xmm5
+  movupd  -16(%rax), %xmm0
+  addpd  %xmm6, %xmm1
+  addpd  %xmm7, %xmm4
+  addpd  %xmm5, %xmm3
+  addpd  %xmm0, %xmm2
+  cmpq  %rdi, %rax
+  jne  .L3
+  movapd  %xmm4, %xmm6
+  movapd  %xmm2, %xmm7
+  movapd  %xmm1, %xmm0
+  unpckhpd  %xmm6, %xmm6
+  unpckhpd  %xmm7, %xmm7
+  unpckhpd  %xmm1, %xmm1
+  movapd  %xmm6, %xmm5
+  addsd  %xmm7, %xmm2
+  addsd  %xmm4, %xmm5
+  movapd  %xmm3, %xmm4
+  unpckhpd  %xmm4, %xmm4
+  addsd  %xmm4, %xmm3
+  addsd  %xmm3, %xmm2
+.L2:
+  leaq  0(,%rcx,8), %rdi
+  subq  %rdi, %rsi
+  testq  %rsi, %rsi
+  jle  .L4
+  salq  $6, %rcx
+  addq  %rsi, %rdi
+  leaq  (%r8,%rcx), %rax
+  leaq  (%r8,%rdi,8), %rcx
+  movq  %rcx, %rsi
+  subq  %rax, %rsi
+  andl  $8, %esi
+  je  .L5
+  addsd  (%rax), %xmm0
+  addq  $8, %rax
+  cmpq  %rax, %rcx
+  je  .L4
+.L5:
+  addsd  (%rax), %xmm0
+  addq  $16, %rax
+  addsd  -8(%rax), %xmm0
+  cmpq  %rax, %rcx
+  jne  .L5
+.L4:
+  addsd  %xmm1, %xmm0
+  xorl  %eax, %eax
+  addsd  %xmm5, %xmm0
+  addsd  %xmm2, %xmm0
+  movsd  %xmm0, (%rdx)
+  ret
+.L6:
+  pxor  %xmm2, %xmm2
+  movapd  %xmm2, %xmm5
+  movapd  %xmm2, %xmm1
+  movapd  %xmm2, %xmm0
+  jmp  .L2
+
+=== assembly, gcc-O2: gen_dot (whole function) ===
+gen_dot:
+  movq  %rsi, %rcx
+  movq  %rdi, %r9
+  movq  %rdx, %rdi
+  shrq  $3, %rcx
+  je  .L6
+  movq  %rcx, %r10
+  pxor  %xmm5, %xmm5
+  movq  %rdx, %rax
+  movq  %r9, %rdx
+  movapd  %xmm5, %xmm2
+  salq  $6, %r10
+  movapd  %xmm5, %xmm3
+  movapd  %xmm5, %xmm4
+  addq  %rdi, %r10
+.L3:
+  movupd  (%rdx), %xmm7
+  movupd  (%rax), %xmm0
+  addq  $64, %rax
+  addq  $64, %rdx
+  movupd  -48(%rdx), %xmm6
+  movupd  -32(%rdx), %xmm1
+  mulpd  %xmm7, %xmm0
+  movupd  -16(%rdx), %xmm7
+  addpd  %xmm0, %xmm4
+  movupd  -48(%rax), %xmm0
+  mulpd  %xmm6, %xmm0
+  addpd  %xmm0, %xmm3
+  movupd  -32(%rax), %xmm0
+  mulpd  %xmm1, %xmm0
+  addpd  %xmm0, %xmm2
+  movupd  -16(%rax), %xmm0
+  mulpd  %xmm7, %xmm0
+  addpd  %xmm0, %xmm5
+  cmpq  %rax, %r10
+  jne  .L3
+  movapd  %xmm3, %xmm6
+  movapd  %xmm5, %xmm0
+  movapd  %xmm4, %xmm1
+  unpckhpd  %xmm6, %xmm6
+  unpckhpd  %xmm4, %xmm4
+  addsd  %xmm6, %xmm3
+  movapd  %xmm2, %xmm6
+  unpckhpd  %xmm6, %xmm6
+  addsd  %xmm6, %xmm2
+  movapd  %xmm5, %xmm6
+  unpckhpd  %xmm6, %xmm6
+  addsd  %xmm6, %xmm0
+  addsd  %xmm0, %xmm2
+.L2:
+  leaq  0(,%rcx,8), %rdx
+  subq  %rdx, %rsi
+  testq  %rsi, %rsi
+  jle  .L4
+  movq  %rcx, %rax
+  addq  %rsi, %rdx
+  salq  $6, %rax
+  salq  $3, %rdx
+.L5:
+  movsd  (%r9,%rax), %xmm0
+  mulsd  (%rdi,%rax), %xmm0
+  addq  $8, %rax
+  addsd  %xmm0, %xmm1
+  cmpq  %rax, %rdx
+  jne  .L5
+.L4:
+  addsd  %xmm4, %xmm1
+  xorl  %eax, %eax
+  addsd  %xmm3, %xmm1
+  addsd  %xmm2, %xmm1
+  movsd  %xmm1, (%r8)
+  ret
+.L6:
+  pxor  %xmm2, %xmm2
+  movapd  %xmm2, %xmm3
+  movapd  %xmm2, %xmm4
+  movapd  %xmm2, %xmm1
+  jmp  .L2
+
+=== assembly, gcc-O2-native: gen_sum8 (whole function) ===
+gen_sum8:
+  movq  %rdx, %r8
+  movq  %rsi, %rdx
+  shrq  $3, %rdx
+  je  .L6
+  movq  %rdx, %rcx
+  vxorpd  %xmm1, %xmm1, %xmm1
+  movq  %rdi, %rax
+  salq  $6, %rcx
+  vmovapd  %ymm1, %ymm2
+  addq  %rdi, %rcx
+.L3:
+  vaddpd  (%rax), %ymm2, %ymm2
+  vaddpd  32(%rax), %ymm1, %ymm1
+  addq  $64, %rax
+  cmpq  %rcx, %rax
+  jne  .L3
+  vmovsd  %xmm2, %xmm2, %xmm0
+  vunpckhpd  %xmm2, %xmm2, %xmm3
+  vextractf128  $0x1, %ymm2, %xmm2
+  vunpckhpd  %xmm2, %xmm2, %xmm5
+  vaddsd  %xmm2, %xmm5, %xmm5
+  vunpckhpd  %xmm1, %xmm1, %xmm2
+  vaddsd  %xmm1, %xmm2, %xmm2
+  vextractf128  $0x1, %ymm1, %xmm1
+  vunpckhpd  %xmm1, %xmm1, %xmm4
+  vaddsd  %xmm1, %xmm4, %xmm1
+  vaddsd  %xmm1, %xmm2, %xmm1
+  vzeroupper
+.L2:
+  leaq  0(,%rdx,8), %rcx
+  subq  %rcx, %rsi
+  testq  %rsi, %rsi
+  jle  .L4
+  salq  $6, %rdx
+  addq  %rsi, %rcx
+  leaq  (%rdi,%rdx), %rax
+  leaq  (%rdi,%rcx,8), %rdx
+  movq  %rdx, %rcx
+  subq  %rax, %rcx
+  andl  $8, %ecx
+  je  .L5
+  vaddsd  (%rax), %xmm0, %xmm0
+  addq  $8, %rax
+  cmpq  %rax, %rdx
+  je  .L4
+.L5:
+  vaddsd  (%rax), %xmm0, %xmm0
+  addq  $16, %rax
+  vaddsd  -8(%rax), %xmm0, %xmm0
+  cmpq  %rax, %rdx
+  jne  .L5
+.L4:
+  vaddsd  %xmm3, %xmm0, %xmm0
+  xorl  %eax, %eax
+  vaddsd  %xmm5, %xmm0, %xmm0
+  vaddsd  %xmm1, %xmm0, %xmm0
+  vmovsd  %xmm0, (%r8)
+  ret
+.L6:
+  vxorpd  %xmm1, %xmm1, %xmm1
+  vmovsd  %xmm1, %xmm1, %xmm5
+  vmovsd  %xmm1, %xmm1, %xmm3
+  vmovsd  %xmm1, %xmm1, %xmm0
+  jmp  .L2
+
+=== assembly, gcc-O2-native: gen_dot (whole function) ===
+gen_dot:
+  movq  %rsi, %rcx
+  shrq  $3, %rcx
+  je  .L6
+  movq  %rcx, %r9
+  vxorpd  %xmm2, %xmm2, %xmm2
+  xorl  %eax, %eax
+  salq  $6, %r9
+  vmovapd  %ymm2, %ymm3
+.L3:
+  vmovupd  (%rdx,%rax), %ymm6
+  vmulpd  (%rdi,%rax), %ymm6, %ymm0
+  vmovupd  32(%rdx,%rax), %ymm7
+  vaddpd  %ymm0, %ymm3, %ymm3
+  vmulpd  32(%rdi,%rax), %ymm7, %ymm0
+  addq  $64, %rax
+  vaddpd  %ymm0, %ymm2, %ymm2
+  cmpq  %rax, %r9
+  jne  .L3
+  vunpckhpd  %xmm2, %xmm2, %xmm0
+  vmovsd  %xmm3, %xmm3, %xmm1
+  vunpckhpd  %xmm3, %xmm3, %xmm4
+  vextractf128  $0x1, %ymm3, %xmm3
+  vaddsd  %xmm2, %xmm0, %xmm0
+  vextractf128  $0x1, %ymm2, %xmm2
+  vunpckhpd  %xmm3, %xmm3, %xmm5
+  vaddsd  %xmm3, %xmm5, %xmm5
+  vunpckhpd  %xmm2, %xmm2, %xmm3
+  vaddsd  %xmm2, %xmm3, %xmm2
+  vaddsd  %xmm2, %xmm0, %xmm2
+  vzeroupper
+.L2:
+  leaq  0(,%rcx,8), %r9
+  subq  %r9, %rsi
+  testq  %rsi, %rsi
+  jle  .L4
+  movq  %rcx, %rax
+  leaq  (%r9,%rsi), %rcx
+  salq  $6, %rax
+  salq  $3, %rcx
+.L5:
+  vmovsd  (%rdi,%rax), %xmm0
+  vmulsd  (%rdx,%rax), %xmm0, %xmm0
+  addq  $8, %rax
+  vaddsd  %xmm0, %xmm1, %xmm1
+  cmpq  %rax, %rcx
+  jne  .L5
+.L4:
+  vaddsd  %xmm4, %xmm1, %xmm1
+  xorl  %eax, %eax
+  vaddsd  %xmm5, %xmm1, %xmm1
+  vaddsd  %xmm2, %xmm1, %xmm1
+  vmovsd  %xmm1, (%r8)
+  ret
+.L6:
+  vxorpd  %xmm2, %xmm2, %xmm2
+  vmovsd  %xmm2, %xmm2, %xmm5
+  vmovsd  %xmm2, %xmm2, %xmm4
+  vmovsd  %xmm2, %xmm2, %xmm1
+  jmp  .L2
+
+=== assembly, clang-O2: gen_clip (selLe, default form) | gen_clip_lazy ===
+gen_clip:						    gen_clip_lazy:
+  testq	 %rsi, %rsi					      testq  %rsi, %rsi
+  jle  .LBB0_7						      jle  .LBB0_7
+  cmpq	$4, %rsi					      cmpq  $4, %rsi
+  jae  .LBB0_4						      jae  .LBB0_4
+  xorl	%eax, %eax					      xorl  %eax, %eax
+  jmp  .LBB0_3						      jmp  .LBB0_3
+.LBB0_4:						    .LBB0_4:
+  movabsq  $9223372036854775804, %rax			      movabsq  $9223372036854775804, %rax
+  andq	%rsi, %rax					      andq  %rsi, %rax
+  movapd  %xmm0, %xmm2					      movapd  %xmm0, %xmm2
+  unpcklpd  %xmm0, %xmm2				      unpcklpd	%xmm0, %xmm2
+  movapd  %xmm1, %xmm3					      movapd  %xmm1, %xmm3
+  unpcklpd  %xmm1, %xmm3				      unpcklpd	%xmm1, %xmm3
+  xorl	%ecx, %ecx					      xorl  %ecx, %ecx
+.LBB0_5:						    .LBB0_5:
+  movupd  (%rdi,%rcx,8), %xmm4				      movupd  (%rdi,%rcx,8), %xmm4
+  movupd  16(%rdi,%rcx,8), %xmm5			      movupd  16(%rdi,%rcx,8), %xmm5
+  movapd  %xmm3, %xmm6					      movapd  %xmm3, %xmm6
+  cmplepd  %xmm4, %xmm6					      cmplepd  %xmm4, %xmm6
+  movapd  %xmm3, %xmm7					      movapd  %xmm3, %xmm7
+  andpd	 %xmm6, %xmm7					      andpd  %xmm6, %xmm7
+  andnpd  %xmm4, %xmm6					      andnpd  %xmm4, %xmm6
+  cmpnlepd  %xmm2, %xmm4				      cmpnlepd	%xmm2, %xmm4
+  movapd  %xmm3, %xmm8					      movapd  %xmm3, %xmm8
+  cmplepd  %xmm5, %xmm8					      cmplepd  %xmm5, %xmm8
+  movapd  %xmm3, %xmm9					      movapd  %xmm3, %xmm9
+  andpd	 %xmm8, %xmm9					      andpd  %xmm8, %xmm9
+  andnpd  %xmm5, %xmm8					      andnpd  %xmm5, %xmm8
+  cmpnlepd  %xmm2, %xmm5				      cmpnlepd	%xmm2, %xmm5
+  orpd	%xmm7, %xmm6					      orpd  %xmm7, %xmm6
+  orpd	%xmm9, %xmm8					      orpd  %xmm9, %xmm8
+  andpd	 %xmm4, %xmm6					      andpd  %xmm4, %xmm6
+  andnpd  %xmm2, %xmm4					      andnpd  %xmm2, %xmm4
+  orpd	%xmm6, %xmm4					      orpd  %xmm6, %xmm4
+  andpd	 %xmm5, %xmm8					      andpd  %xmm5, %xmm8
+  andnpd  %xmm2, %xmm5					      andnpd  %xmm2, %xmm5
+  orpd	%xmm8, %xmm5					      orpd  %xmm8, %xmm5
+  movupd  %xmm4, (%rdx,%rcx,8)				      movupd  %xmm4, (%rdx,%rcx,8)
+  movupd  %xmm5, 16(%rdx,%rcx,8)			      movupd  %xmm5, 16(%rdx,%rcx,8)
+  addq	$4, %rcx					      addq  $4, %rcx
+  cmpq	%rcx, %rax					      cmpq  %rcx, %rax
+  jne  .LBB0_5						      jne  .LBB0_5
+  jmp  .LBB0_6						      jmp  .LBB0_6
+.LBB0_3:						    .LBB0_3:
+  movsd	 (%rdi,%rax,8), %xmm2				      movsd  (%rdi,%rax,8), %xmm2
+  movapd  %xmm1, %xmm3					      movapd  %xmm1, %xmm3
+  cmplesd  %xmm2, %xmm3					      cmplesd  %xmm2, %xmm3
+  movapd  %xmm3, %xmm4					      movapd  %xmm3, %xmm4
+  andnpd  %xmm2, %xmm4					      andnpd  %xmm2, %xmm4
+  andpd	 %xmm1, %xmm3					      andpd  %xmm1, %xmm3
+  orpd	%xmm4, %xmm3					      orpd  %xmm4, %xmm3
+  cmpnlesd  %xmm0, %xmm2				      cmpnlesd	%xmm0, %xmm2
+  andpd	 %xmm2, %xmm3					      andpd  %xmm2, %xmm3
+  andnpd  %xmm0, %xmm2					      andnpd  %xmm0, %xmm2
+  orpd	%xmm3, %xmm2					      orpd  %xmm3, %xmm2
+  movlpd  %xmm2, (%rdx,%rax,8)				      movlpd  %xmm2, (%rdx,%rax,8)
+  incq	%rax						      incq  %rax
+.LBB0_6:						    .LBB0_6:
+  cmpq	%rax, %rsi					      cmpq  %rax, %rsi
+  jne  .LBB0_3						      jne  .LBB0_3
+.LBB0_7:						    .LBB0_7:
+  xorl	%eax, %eax					      xorl  %eax, %eax
+  retq							      retq
+
+=== assembly, clang-O2: the main loop of naive_sum_fast (-ffast-math) ===
+naive_sum_fast:
+  testq  %rsi, %rsi
+  jle  .LBB0_1
+  cmpq  $4, %rsi
+  jae  .LBB0_5
+  xorpd  %xmm0, %xmm0
+  xorl  %eax, %eax
+  jmp  .LBB0_4
+.LBB0_1:
+  xorpd  %xmm0, %xmm0
+  jmp  .LBB0_9
+.LBB0_5:
+  movabsq  $9223372036854775804, %rax
+  andq  %rsi, %rax
+  xorpd  %xmm0, %xmm0
+  xorl  %ecx, %ecx
+  xorpd  %xmm1, %xmm1
+.LBB0_6:
+  movupd  (%rdi,%rcx,8), %xmm2
+  addpd  %xmm2, %xmm0
+  movupd  16(%rdi,%rcx,8), %xmm2
+  addpd  %xmm2, %xmm1
+  addq  $4, %rcx
+  cmpq  %rcx, %rax
+  jne  .LBB0_6
+  addpd  %xmm0, %xmm1
+  movapd  %xmm1, %xmm0
+  unpckhpd  %xmm1, %xmm0
+  addsd  %xmm1, %xmm0
+  jmp  .LBB0_8
+.LBB0_4:
+  addsd  (%rdi,%rax,8), %xmm0
+  incq  %rax
+.LBB0_8:
+  cmpq  %rax, %rsi
+  jne  .LBB0_4
+.LBB0_9:
+  movsd  %xmm0, (%rdx)
+  xorl  %eax, %eax
+  retq
+
+=== assembly, clang-O2-native: gen_clip (selLe, default form) | gen_clip_lazy ===
+gen_clip:						    gen_clip_lazy:
+  testq	 %rsi, %rsi					      testq  %rsi, %rsi
+  jle  .LBB0_13						      jle  .LBB0_13
+  cmpq	$3, %rsi					      cmpq  $3, %rsi
+  ja  .LBB0_4						      ja  .LBB0_4
+  xorl	%eax, %eax					      xorl  %eax, %eax
+  jmp  .LBB0_3						      jmp  .LBB0_3
+.LBB0_4:						    .LBB0_4:
+  movabsq  $9223372036854775792, %rcx			      movabsq  $9223372036854775792, %rcx
+  cmpq	$16, %rsi					      cmpq  $16, %rsi
+  jae  .LBB0_6						      jae  .LBB0_6
+  xorl	%eax, %eax					      xorl  %eax, %eax
+  jmp  .LBB0_10						      jmp  .LBB0_10
+.LBB0_6:						    .LBB0_6:
+  movq	%rsi, %rax					      movq  %rsi, %rax
+  andq	%rcx, %rax					      andq  %rcx, %rax
+  vbroadcastsd	%xmm0, %ymm2				      vbroadcastsd  %xmm0, %ymm2
+  vbroadcastsd	%xmm1, %ymm3				      vbroadcastsd  %xmm1, %ymm3
+  xorl	%r8d, %r8d					      xorl  %r8d, %r8d
+.LBB0_7:						    .LBB0_7:
+  vmovupd  (%rdi,%r8,8), %ymm4				      vmovupd  (%rdi,%r8,8), %ymm4
+  vmovupd  32(%rdi,%r8,8), %ymm5			      vmovupd  32(%rdi,%r8,8), %ymm5
+  vmovupd  64(%rdi,%r8,8), %ymm6			      vmovupd  64(%rdi,%r8,8), %ymm6
+  vmovupd  96(%rdi,%r8,8), %ymm7			      vmovupd  96(%rdi,%r8,8), %ymm7
+  vcmpnlepd  %ymm2, %ymm4, %ymm8			      vcmpnlepd	 %ymm2, %ymm4, %ymm8
+  vcmpnlepd  %ymm2, %ymm5, %ymm9			      vcmpnlepd	 %ymm2, %ymm5, %ymm9
+  vcmpnlepd  %ymm2, %ymm6, %ymm10			      vcmpnlepd	 %ymm2, %ymm6, %ymm10
+  vcmpnlepd  %ymm2, %ymm7, %ymm11			      vcmpnlepd	 %ymm2, %ymm7, %ymm11
+  vcmplepd  %ymm4, %ymm3, %ymm12			      vcmplepd	%ymm4, %ymm3, %ymm12
+  vcmplepd  %ymm5, %ymm3, %ymm13			      vcmplepd	%ymm5, %ymm3, %ymm13
+  vcmplepd  %ymm6, %ymm3, %ymm14			      vcmplepd	%ymm6, %ymm3, %ymm14
+  vcmplepd  %ymm7, %ymm3, %ymm15			      vcmplepd	%ymm7, %ymm3, %ymm15
+  vblendvpd  %ymm12, %ymm3, %ymm4, %ymm4		      vblendvpd	 %ymm12, %ymm3, %ymm4, %ymm4
+  vblendvpd  %ymm13, %ymm3, %ymm5, %ymm5		      vblendvpd	 %ymm13, %ymm3, %ymm5, %ymm5
+  vblendvpd  %ymm14, %ymm3, %ymm6, %ymm6		      vblendvpd	 %ymm14, %ymm3, %ymm6, %ymm6
+  vblendvpd  %ymm15, %ymm3, %ymm7, %ymm7		      vblendvpd	 %ymm15, %ymm3, %ymm7, %ymm7
+  vblendvpd  %ymm8, %ymm4, %ymm2, %ymm4			      vblendvpd	 %ymm8, %ymm4, %ymm2, %ymm4
+  vblendvpd  %ymm9, %ymm5, %ymm2, %ymm5			      vblendvpd	 %ymm9, %ymm5, %ymm2, %ymm5
+  vblendvpd  %ymm10, %ymm6, %ymm2, %ymm6		      vblendvpd	 %ymm10, %ymm6, %ymm2, %ymm6
+  vblendvpd  %ymm11, %ymm7, %ymm2, %ymm7		      vblendvpd	 %ymm11, %ymm7, %ymm2, %ymm7
+  vmovupd  %ymm4, (%rdx,%r8,8)				      vmovupd  %ymm4, (%rdx,%r8,8)
+  vmovupd  %ymm5, 32(%rdx,%r8,8)			      vmovupd  %ymm5, 32(%rdx,%r8,8)
+  vmovupd  %ymm6, 64(%rdx,%r8,8)			      vmovupd  %ymm6, 64(%rdx,%r8,8)
+  vmovupd  %ymm7, 96(%rdx,%r8,8)			      vmovupd  %ymm7, 96(%rdx,%r8,8)
+  addq	$16, %r8					      addq  $16, %r8
+  cmpq	%r8, %rax					      cmpq  %r8, %rax
+  jne  .LBB0_7						      jne  .LBB0_7
+  cmpq	%rax, %rsi					      cmpq  %rax, %rsi
+  je  .LBB0_13						      je  .LBB0_13
+  testb	 $12, %sil					      testb  $12, %sil
+  je  .LBB0_3						      je  .LBB0_3
+.LBB0_10:						    .LBB0_10:
+  movq	%rax, %r8					      movq  %rax, %r8
+  addq	$12, %rcx					      addq  $12, %rcx
+  movq	%rcx, %rax					      movq  %rcx, %rax
+  andq	%rsi, %rax					      andq  %rsi, %rax
+  vbroadcastsd	%xmm0, %ymm2				      vbroadcastsd  %xmm0, %ymm2
+  vbroadcastsd	%xmm1, %ymm3				      vbroadcastsd  %xmm1, %ymm3
+.LBB0_11:						    .LBB0_11:
+  vmovupd  (%rdi,%r8,8), %ymm4				      vmovupd  (%rdi,%r8,8), %ymm4
+  vcmpnlepd  %ymm2, %ymm4, %ymm5			      vcmpnlepd	 %ymm2, %ymm4, %ymm5
+  vcmplepd  %ymm4, %ymm3, %ymm6				      vcmplepd	%ymm4, %ymm3, %ymm6
+  vblendvpd  %ymm6, %ymm3, %ymm4, %ymm4			      vblendvpd	 %ymm6, %ymm3, %ymm4, %ymm4
+  vblendvpd  %ymm5, %ymm4, %ymm2, %ymm4			      vblendvpd	 %ymm5, %ymm4, %ymm2, %ymm4
+  vmovupd  %ymm4, (%rdx,%r8,8)				      vmovupd  %ymm4, (%rdx,%r8,8)
+  addq	$4, %r8						      addq  $4, %r8
+  cmpq	%r8, %rax					      cmpq  %r8, %rax
+  jne  .LBB0_11						      jne  .LBB0_11
+  jmp  .LBB0_12						      jmp  .LBB0_12
+.LBB0_3:						    .LBB0_3:
+  vmovsd  (%rdi,%rax,8), %xmm2				      vmovsd  (%rdi,%rax,8), %xmm2
+  vcmplesd  %xmm2, %xmm1, %xmm3				      vcmplesd	%xmm2, %xmm1, %xmm3
+  vblendvpd  %xmm3, %xmm1, %xmm2, %xmm3			      vblendvpd	 %xmm3, %xmm1, %xmm2, %xmm3
+  vcmpnlesd  %xmm0, %xmm2, %xmm2			      vcmpnlesd	 %xmm0, %xmm2, %xmm2
+  vblendvpd  %xmm2, %xmm3, %xmm0, %xmm2			      vblendvpd	 %xmm2, %xmm3, %xmm0, %xmm2
+  vmovlpd  %xmm2, (%rdx,%rax,8)				      vmovlpd  %xmm2, (%rdx,%rax,8)
+  incq	%rax						      incq  %rax
+.LBB0_12:						    .LBB0_12:
+  cmpq	%rax, %rsi					      cmpq  %rax, %rsi
+  jne  .LBB0_3						      jne  .LBB0_3
+.LBB0_13:						    .LBB0_13:
+  xorl	%eax, %eax					      xorl  %eax, %eax
+  vzeroupper						      vzeroupper
+  retq							      retq
+
+=== assembly, clang-O2-native: the main loop of naive_sum_fast (-ffast-math) ===
+naive_sum_fast:
+  testq  %rsi, %rsi
+  jle  .LBB0_1
+  cmpq  $3, %rsi
+  ja  .LBB0_5
+  vxorpd  %xmm0, %xmm0, %xmm0
+  xorl  %eax, %eax
+  jmp  .LBB0_4
+.LBB0_1:
+  vxorpd  %xmm0, %xmm0, %xmm0
+  jmp  .LBB0_15
+.LBB0_5:
+  movabsq  $9223372036854775792, %rcx
+  cmpq  $16, %rsi
+  jae  .LBB0_7
+  vxorpd  %xmm0, %xmm0, %xmm0
+  xorl  %eax, %eax
+  jmp  .LBB0_11
+.LBB0_7:
+  movq  %rsi, %rax
+  andq  %rcx, %rax
+  vxorpd  %xmm0, %xmm0, %xmm0
+  xorl  %r8d, %r8d
+  vxorpd  %xmm1, %xmm1, %xmm1
+  vxorpd  %xmm2, %xmm2, %xmm2
+  vxorpd  %xmm3, %xmm3, %xmm3
+.LBB0_8:
+  vaddpd  (%rdi,%r8,8), %ymm0, %ymm0
+  vaddpd  32(%rdi,%r8,8), %ymm1, %ymm1
+  vaddpd  64(%rdi,%r8,8), %ymm2, %ymm2
+  vaddpd  96(%rdi,%r8,8), %ymm3, %ymm3
+  addq  $16, %r8
+  cmpq  %r8, %rax
+  jne  .LBB0_8
+  vaddpd  %ymm0, %ymm1, %ymm0
+  vaddpd  %ymm2, %ymm3, %ymm1
+  vaddpd  %ymm0, %ymm1, %ymm0
+  vextractf128  $1, %ymm0, %xmm1
+  vaddpd  %xmm1, %xmm0, %xmm0
+  vshufpd  $1, %xmm0, %xmm0, %xmm1
+  vaddsd  %xmm1, %xmm0, %xmm0
+  cmpq  %rax, %rsi
+  je  .LBB0_15
+  testb  $12, %sil
+  je  .LBB0_4
+.LBB0_11:
+  movq  %rax, %r8
+  addq  $12, %rcx
+  movq  %rcx, %rax
+  andq  %rsi, %rax
+  vmovq  %xmm0, %xmm0
+.LBB0_12:
+  vaddpd  (%rdi,%r8,8), %ymm0, %ymm0
+  addq  $4, %r8
+  cmpq  %r8, %rax
+  jne  .LBB0_12
+  vextractf128  $1, %ymm0, %xmm1
+  vaddpd  %xmm1, %xmm0, %xmm0
+  vshufpd  $1, %xmm0, %xmm0, %xmm1
+  vaddsd  %xmm1, %xmm0, %xmm0
+  jmp  .LBB0_14
+.LBB0_4:
+  vaddsd  (%rdi,%rax,8), %xmm0, %xmm0
+  incq  %rax
+.LBB0_14:
+  cmpq  %rax, %rsi
+  jne  .LBB0_4
+.LBB0_15:
+  vmovsd  %xmm0, (%rdx)
+  xorl  %eax, %eax
+  vzeroupper
+  retq
+
+=== assembly, gcc-O2: gen_clip (selLe, default form) | gen_clip_lazy ===
+gen_clip:						    gen_clip_lazy:
+  movq	%rsi, %rcx					      testq  %rsi, %rsi
+  testq	 %rsi, %rsi					      jle  .L2
+  jle  .L2						      xorl  %eax, %eax
+  xorl	%eax, %eax					      jmp  .L5
+.L7:							    .L10:
+  movsd	 (%rdi,%rax,8), %xmm3				      movapd  %xmm1, %xmm3
+  movapd  %xmm1, %xmm2					      cmpnlesd	%xmm2, %xmm3
+  movapd  %xmm1, %xmm4					      andpd  %xmm3, %xmm2
+  cmplesd  %xmm3, %xmm2					      andnpd  %xmm1, %xmm3
+  andpd	 %xmm2, %xmm4					      orpd  %xmm3, %xmm2
+  andnpd  %xmm3, %xmm2					      movsd  %xmm2, (%rdx,%rax,8)
+  cmpnlesd  %xmm0, %xmm3				      addq  $1, %rax
+  orpd	%xmm4, %xmm2					      cmpq  %rax, %rsi
+  andpd	 %xmm3, %xmm2					      je  .L2
+  andnpd  %xmm0, %xmm3					    .L5:
+  orpd	%xmm3, %xmm2					      movsd  (%rdi,%rax,8), %xmm2
+  movsd	 %xmm2, (%rdx,%rax,8)				      comisd  %xmm2, %xmm0
+  addq	$1, %rax					      jb  .L10
+  cmpq	%rax, %rcx					      movapd  %xmm0, %xmm2
+  jne  .L7						      movsd  %xmm2, (%rdx,%rax,8)
+.L2:							      addq  $1, %rax
+  xorl	%eax, %eax					      cmpq  %rax, %rsi
+  ret							      jne  .L5
+							    .L2:
+							      xorl  %eax, %eax
+							      ret
+
+=== assembly, gcc-O2: the main loop of naive_sum_fast (-ffast-math) ===
+naive_sum_fast:
+  testq  %rsi, %rsi
+  jle  .L4
+  leaq  (%rdi,%rsi,8), %rax
+  andl  $1, %esi
+  pxor  %xmm0, %xmm0
+  je  .L3
+  movsd  (%rdi), %xmm0
+  addq  $8, %rdi
+  cmpq  %rax, %rdi
+  je  .L2
+.L3:
+  addsd  (%rdi), %xmm0
+  addq  $16, %rdi
+  addsd  -8(%rdi), %xmm0
+  cmpq  %rax, %rdi
+  jne  .L3
+.L2:
+  movsd  %xmm0, (%rdx)
+  xorl  %eax, %eax
+  ret
+.L4:
+  pxor  %xmm0, %xmm0
+  xorl  %eax, %eax
+  movsd  %xmm0, (%rdx)
+  ret
+
+=== assembly, gcc-O2-native: gen_clip (selLe, default form) | gen_clip_lazy ===
+gen_clip:						    gen_clip_lazy:
+  testq	 %rsi, %rsi					      testq  %rsi, %rsi
+  jle  .L2						      jle  .L2
+  xorl	%eax, %eax					      xorl  %eax, %eax
+.L7:							      jmp  .L5
+  vmovsd  (%rdi,%rax,8), %xmm3				    .L10:
+  vcmplesd  %xmm3, %xmm1, %xmm2				      vcmpnlesd	 %xmm2, %xmm1, %xmm3
+  vblendvpd  %xmm2, %xmm1, %xmm3, %xmm2			      vblendvpd	 %xmm3, %xmm2, %xmm1, %xmm2
+  vcmpnlesd  %xmm0, %xmm3, %xmm3			      vmovsd  %xmm2, (%rdx,%rax,8)
+  vblendvpd  %xmm3, %xmm2, %xmm0, %xmm2			      incq  %rax
+  vmovsd  %xmm2, (%rdx,%rax,8)				      cmpq  %rax, %rsi
+  incq	%rax						      je  .L2
+  cmpq	%rax, %rsi					    .L5:
+  jne  .L7						      vmovsd  (%rdi,%rax,8), %xmm2
+.L2:							      vcomisd  %xmm2, %xmm0
+  xorl	%eax, %eax					      jb  .L10
+  ret							      vmovsd  %xmm0, %xmm0, %xmm2
+							      vmovsd  %xmm2, (%rdx,%rax,8)
+							      incq  %rax
+							      cmpq  %rax, %rsi
+							      jne  .L5
+							    .L2:
+							      xorl  %eax, %eax
+							      ret
+
+=== assembly, gcc-O2-native: the main loop of naive_sum_fast (-ffast-math) ===
+naive_sum_fast:
+  testq  %rsi, %rsi
+  jle  .L4
+  leaq  (%rdi,%rsi,8), %rax
+  andl  $1, %esi
+  vxorpd  %xmm0, %xmm0, %xmm0
+  je  .L3
+  vmovsd  (%rdi), %xmm0
+  addq  $8, %rdi
+  cmpq  %rax, %rdi
+  je  .L2
+.L3:
+  vaddsd  (%rdi), %xmm0, %xmm0
+  addq  $16, %rdi
+  vaddsd  -8(%rdi), %xmm0, %xmm0
+  cmpq  %rax, %rdi
+  jne  .L3
+.L2:
+  vmovsd  %xmm0, (%rdx)
+  xorl  %eax, %eax
+  ret
+.L4:
+  vxorpd  %xmm0, %xmm0, %xmm0
+  xorl  %eax, %eax
+  vmovsd  %xmm0, (%rdx)
+  ret
+
+built build/bench/py-clang/libtenon_kernels.so with clang version 21.1.8 (https://github.com/conda-forge/clangdev-feedstock 0586bae95bd818412431982353f925478061d031), flags: -O2 -std=c11 -ffp-contract=off -fno-fast-math 
+=== Python binding against NumPy, library: clang -O2 -std=c11 -ffp-contract=off -fno-fast-math , pinned to cpu 12 ===
+python 3.12.7, numpy 2.2.6, N = 10000000
+numpy BLAS: scipy-openblas 0.3.29
+-- sum of 10000000 doubles
+  np.sum(x)                               (pairwise summation, SIMD)             min     6.278  median     6.294 ms
+  tenon_kernels.sum8(x)                       (all entry checks)                 min     6.812  median     6.848 ms
+  kernel call alone (ctypes, no checks)                                          min     6.753  median     6.799 ms
+  np.add.accumulate(x)[-1]                (left to right, strict order, allocates) min    52.291  median    52.354 ms
+   values: np.sum -440.7589877199788  sum8 -440.758987719925
+-- dot product of two arrays of 10000000 doubles
+  np.dot(x, y)                            (BLAS ddot, one thread)                min    10.791  median    10.819 ms
+  tenon_kernels.dot(x, y)                     (all entry checks)                 min    11.585  median    11.700 ms
+  kernel call alone (ctypes, no checks)                                          min    11.583  median    11.627 ms
+   values: np.dot 553.4821567181359  dot 553.482156718165
+-- ewma, 10000000 doubles, alpha = 0.05  (NumPy has no exponentially weighted mean; no NumPy row)
+  tenon_kernels.ewma(x, 0.05)                 (allocates np.empty, all checks)   min    49.377  median    49.420 ms
+  tenon_kernels.ewma(x, 0.05, out)            (all checks)                       min    31.915  median    31.940 ms
+  kernel call alone (ctypes, no checks)                                          min    31.873  median    31.895 ms
+-- rolling mean, 10000000 doubles, w = 20
+  NumPy: cumsum, then (c[w:] - c[:-w]) / w                                       min   144.161  median   144.362 ms
+  NumPy: sliding_window_view(x, w).mean(axis=1)   (from scratch per window)      min   381.573  median   381.922 ms
+  tenon_kernels.rolling_mean(x, w)            (allocates np.empty, all checks)   min    72.216  median    72.268 ms
+  tenon_kernels.rolling_mean(x, w, out)       (all checks)                       min    54.749  median    54.786 ms
+  kernel call alone (ctypes, no checks)                                          min    54.713  median    54.743 ms
+-- rolling mean, 10000000 doubles, w = 1000
+  NumPy: cumsum, then (c[w:] - c[:-w]) / w                                       min   144.180  median   144.276 ms
+  tenon_kernels.rolling_mean(x, w)            (allocates np.empty, all checks)   min    72.214  median    72.233 ms
+  tenon_kernels.rolling_mean(x, w, out)       (all checks)                       min    54.758  median    54.796 ms
+  kernel call alone (ctypes, no checks)                                          min    54.705  median    54.731 ms
+-- rolling variance, 10000000 doubles, w = 20
+  NumPy: two cumsums, same naive formula, np.maximum(., 0)                       min   468.637  median   469.284 ms
+  tenon_kernels.rolling_var(x, w, out)        (all checks)                       min   108.667  median   108.886 ms
+  tenon_kernels.rolling_std(x, w, out)        (all checks)                       min   162.883  median   163.006 ms
+  kernel call alone, rolling_var (ctypes, no checks)                             min   108.578  median   108.659 ms
+-- integer prefix sum, 10000000 int64: what an output that needs no entry scan saves
+  np.cumsum(xi, out=oi)                                                          min    28.319  median    28.358 ms
+  prefix_sum(xi, oi, wide=False)   out declared ±10^16: scans x AND out          min    39.667  median    39.721 ms
+  prefix_sum(xi, oi)               out declared int64:  scans x only             min    26.745  median    26.772 ms
+  prefix_sum(xi)                   out declared int64, np.empty: scans x only    min    44.072  median    44.147 ms
+  prefix_sum(xi, wide=False)       out declared ±10^16, np.zeros (no scan of out) min    83.226  median    83.358 ms
+  prefix_sum(xi, oi, check=False)  no scan at all                                min    13.708  median    13.731 ms
+  kernel call alone (ctypes, no checks)                                          min    13.680  median    13.704 ms
+  the scan itself: E1+E2 on x (min and max)                                      min    12.872  median    12.882 ms
+-- small calls: fixed cost of the wrapper (microseconds per call)
+  len 8: np.sum(x)                                                               min     3.188  median     3.228 us
+  len 8: tenon_kernels.sum8(x)                                                   min    10.298  median    10.364 us
+  len 8: sum8 kernel alone (ctypes)                                              min     0.972  median     0.973 us
+  len 8: np.dot(x, y)                                                            min     0.906  median     0.909 us
+  len 8: tenon_kernels.dot(x, y)                                                 min    13.846  median    13.983 us
+  len 8: dot kernel alone (ctypes)                                               min     1.313  median     1.316 us
+  len 8: tenon_kernels.ewma(x, 0.05, out)                                        min    10.082  median    10.136 us
+  len 8: ewma kernel alone (ctypes)                                              min     1.184  median     1.185 us
+  len 1024: np.sum(x)                                                            min     3.801  median     3.831 us
+  len 1024: tenon_kernels.sum8(x)                                                min    10.707  median    10.807 us
+  len 1024: sum8 kernel alone (ctypes)                                           min     1.235  median     1.237 us
+  len 1024: np.dot(x, y)                                                         min     1.129  median     1.162 us
+  len 1024: tenon_kernels.dot(x, y)                                              min    15.123  median    15.259 us
+  len 1024: dot kernel alone (ctypes)                                            min     1.793  median     1.806 us
+  len 1024: tenon_kernels.ewma(x, 0.05, out)                                     min    13.546  median    13.621 us
+  len 1024: ewma kernel alone (ctypes)                                           min     4.344  median     4.347 us
+  len 100000: np.sum(x)                                                          min    47.713  median    47.829 us
+  len 100000: tenon_kernels.sum8(x)                                              min    49.824  median    49.931 us
+  len 100000: sum8 kernel alone (ctypes)                                         min    36.588  median    36.611 us
+  len 100000: np.dot(x, y)                                                       min    52.016  median    52.058 us
+  len 100000: tenon_kernels.dot(x, y)                                            min    88.643  median    88.870 us
+  len 100000: dot kernel alone (ctypes)                                          min    69.915  median    71.794 us
+  len 100000: tenon_kernels.ewma(x, 0.05, out)                                   min   324.645  median   324.919 us
+  len 100000: ewma kernel alone (ctypes)                                         min   311.798  median   311.892 us
+-- the entry checks of one float call, separately (microseconds)
+  E1 on a float64 array (dtype, layout; nothing to scan)                         min     0.786  median     0.787 us
+  E4: the generated requirement (a Python lambda)                                min     0.242  median     0.247 us
+  E5: np.may_share_memory(x, out)                                                min     0.441  median     0.441 us
+  E6: tn_fpenv_ok() through ctypes                                               min     0.306  median     0.306 us
+built build/bench/py-clang-native/libtenon_kernels.so with clang version 21.1.8 (https://github.com/conda-forge/clangdev-feedstock 0586bae95bd818412431982353f925478061d031), flags: -O2 -std=c11 -ffp-contract=off -fno-fast-math -march=native
+=== Python binding against NumPy, library: clang -O2 -std=c11 -ffp-contract=off -fno-fast-math -march=native, pinned to cpu 12 ===
+python 3.12.7, numpy 2.2.6, N = 10000000
+numpy BLAS: scipy-openblas 0.3.29
+-- sum of 10000000 doubles
+  np.sum(x)                               (pairwise summation, SIMD)             min     6.235  median     6.245 ms
+  tenon_kernels.sum8(x)                       (all entry checks)                 min     6.757  median     6.848 ms
+  kernel call alone (ctypes, no checks)                                          min     6.745  median     6.794 ms
+  np.add.accumulate(x)[-1]                (left to right, strict order, allocates) min    52.314  median    52.363 ms
+   values: np.sum -440.7589877199788  sum8 -440.758987719925
+-- dot product of two arrays of 10000000 doubles
+  np.dot(x, y)                            (BLAS ddot, one thread)                min    10.802  median    10.816 ms
+  tenon_kernels.dot(x, y)                     (all entry checks)                 min    11.808  median    11.874 ms
+  kernel call alone (ctypes, no checks)                                          min    11.670  median    11.797 ms
+   values: np.dot 553.4821567181359  dot 553.482156718165
+-- ewma, 10000000 doubles, alpha = 0.05  (NumPy has no exponentially weighted mean; no NumPy row)
+  tenon_kernels.ewma(x, 0.05)                 (allocates np.empty, all checks)   min    49.417  median    49.453 ms
+  tenon_kernels.ewma(x, 0.05, out)            (all checks)                       min    31.971  median    31.999 ms
+  kernel call alone (ctypes, no checks)                                          min    31.917  median    31.944 ms
+-- rolling mean, 10000000 doubles, w = 20
+  NumPy: cumsum, then (c[w:] - c[:-w]) / w                                       min   144.148  median   144.291 ms
+  NumPy: sliding_window_view(x, w).mean(axis=1)   (from scratch per window)      min   381.551  median   382.047 ms
+  tenon_kernels.rolling_mean(x, w)            (allocates np.empty, all checks)   min    71.710  median    71.813 ms
+  tenon_kernels.rolling_mean(x, w, out)       (all checks)                       min    54.303  median    54.326 ms
+  kernel call alone (ctypes, no checks)                                          min    54.248  median    54.283 ms
+-- rolling mean, 10000000 doubles, w = 1000
+  NumPy: cumsum, then (c[w:] - c[:-w]) / w                                       min   144.182  median   144.295 ms
+  tenon_kernels.rolling_mean(x, w)            (allocates np.empty, all checks)   min    71.578  median    71.717 ms
+  tenon_kernels.rolling_mean(x, w, out)       (all checks)                       min    54.300  median    54.325 ms
+  kernel call alone (ctypes, no checks)                                          min    54.259  median    54.289 ms
+-- rolling variance, 10000000 doubles, w = 20
+  NumPy: two cumsums, same naive formula, np.maximum(., 0)                       min   468.562  median   468.873 ms
+  tenon_kernels.rolling_var(x, w, out)        (all checks)                       min   108.550  median   108.630 ms
+  tenon_kernels.rolling_std(x, w, out)        (all checks)                       min   162.895  median   163.011 ms
+  kernel call alone, rolling_var (ctypes, no checks)                             min   108.582  median   108.736 ms
+-- integer prefix sum, 10000000 int64: what an output that needs no entry scan saves
+  np.cumsum(xi, out=oi)                                                          min    28.295  median    28.363 ms
+  prefix_sum(xi, oi, wide=False)   out declared ±10^16: scans x AND out          min    39.602  median    39.699 ms
+  prefix_sum(xi, oi)               out declared int64:  scans x only             min    26.727  median    26.786 ms
+  prefix_sum(xi)                   out declared int64, np.empty: scans x only    min    44.040  median    44.091 ms
+  prefix_sum(xi, wide=False)       out declared ±10^16, np.zeros (no scan of out) min    83.576  median    83.775 ms
+  prefix_sum(xi, oi, check=False)  no scan at all                                min    13.720  median    13.760 ms
+  kernel call alone (ctypes, no checks)                                          min    13.704  median    13.729 ms
+  the scan itself: E1+E2 on x (min and max)                                      min    12.881  median    12.906 ms
+-- small calls: fixed cost of the wrapper (microseconds per call)
+  len 8: np.sum(x)                                                               min     3.122  median     3.131 us
+  len 8: tenon_kernels.sum8(x)                                                   min     9.909  median     9.980 us
+  len 8: sum8 kernel alone (ctypes)                                              min     0.966  median     0.968 us
+  len 8: np.dot(x, y)                                                            min     0.945  median     0.947 us
+  len 8: tenon_kernels.dot(x, y)                                                 min    13.650  median    13.739 us
+  len 8: dot kernel alone (ctypes)                                               min     1.308  median     1.310 us
+  len 8: tenon_kernels.ewma(x, 0.05, out)                                        min     9.952  median    10.048 us
+  len 8: ewma kernel alone (ctypes)                                              min     1.179  median     1.180 us
+  len 1024: np.sum(x)                                                            min     3.743  median     3.789 us
+  len 1024: tenon_kernels.sum8(x)                                                min    10.327  median    10.401 us
+  len 1024: sum8 kernel alone (ctypes)                                           min     1.235  median     1.237 us
+  len 1024: np.dot(x, y)                                                         min     1.119  median     1.122 us
+  len 1024: tenon_kernels.dot(x, y)                                              min    14.705  median    14.813 us
+  len 1024: dot kernel alone (ctypes)                                            min     1.805  median     1.822 us
+  len 1024: tenon_kernels.ewma(x, 0.05, out)                                     min    13.378  median    13.417 us
+  len 1024: ewma kernel alone (ctypes)                                           min     4.374  median     4.381 us
+  len 100000: np.sum(x)                                                          min    47.295  median    47.377 us
+  len 100000: tenon_kernels.sum8(x)                                              min    47.171  median    47.590 us
+  len 100000: sum8 kernel alone (ctypes)                                         min    34.947  median    35.021 us
+  len 100000: np.dot(x, y)                                                       min    52.030  median    52.106 us
+  len 100000: tenon_kernels.dot(x, y)                                            min    87.717  median    88.971 us
+  len 100000: dot kernel alone (ctypes)                                          min    71.283  median    71.424 us
+  len 100000: tenon_kernels.ewma(x, 0.05, out)                                   min   326.016  median   326.196 us
+  len 100000: ewma kernel alone (ctypes)                                         min   313.500  median   313.617 us
+-- the entry checks of one float call, separately (microseconds)
+  E1 on a float64 array (dtype, layout; nothing to scan)                         min     0.772  median     0.774 us
+  E4: the generated requirement (a Python lambda)                                min     0.239  median     0.239 us
+  E5: np.may_share_memory(x, out)                                                min     0.435  median     0.435 us
+  E6: tn_fpenv_ok() through ctypes                                               min     0.303  median     0.304 us
+built build/bench/py-gcc-native/libtenon_kernels.so with gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, flags: -O2 -std=c11 -ffp-contract=off -fno-fast-math -march=native
+=== Python binding against NumPy, library: gcc -O2 -std=c11 -ffp-contract=off -fno-fast-math -march=native, pinned to cpu 12 ===
+python 3.12.7, numpy 2.2.6, N = 10000000
+numpy BLAS: scipy-openblas 0.3.29
+-- sum of 10000000 doubles
+  np.sum(x)                               (pairwise summation, SIMD)             min     6.236  median     6.255 ms
+  tenon_kernels.sum8(x)                       (all entry checks)                 min     6.319  median     6.353 ms
+  kernel call alone (ctypes, no checks)                                          min     6.291  median     6.304 ms
+  np.add.accumulate(x)[-1]                (left to right, strict order, allocates) min    53.191  median    53.246 ms
+   values: np.sum -440.7589877199788  sum8 -440.758987719925
+-- dot product of two arrays of 10000000 doubles
+  np.dot(x, y)                            (BLAS ddot, one thread)                min    10.798  median    10.810 ms
+  tenon_kernels.dot(x, y)                     (all entry checks)                 min    10.847  median    10.870 ms
+  kernel call alone (ctypes, no checks)                                          min    10.792  median    10.819 ms
+   values: np.dot 553.4821567181359  dot 553.482156718165
+-- ewma, 10000000 doubles, alpha = 0.05  (NumPy has no exponentially weighted mean; no NumPy row)
+  tenon_kernels.ewma(x, 0.05)                 (allocates np.empty, all checks)   min    50.274  median    50.314 ms
+  tenon_kernels.ewma(x, 0.05, out)            (all checks)                       min    31.975  median    32.000 ms
+  kernel call alone (ctypes, no checks)                                          min    31.912  median    31.950 ms
+-- rolling mean, 10000000 doubles, w = 20
+  NumPy: cumsum, then (c[w:] - c[:-w]) / w                                       min   144.902  median   145.122 ms
+  NumPy: sliding_window_view(x, w).mean(axis=1)   (from scratch per window)      min   382.746  median   383.179 ms
+  tenon_kernels.rolling_mean(x, w)            (allocates np.empty, all checks)   min    72.799  median    72.862 ms
+  tenon_kernels.rolling_mean(x, w, out)       (all checks)                       min    54.448  median    54.495 ms
+  kernel call alone (ctypes, no checks)                                          min    54.463  median    54.551 ms
+-- rolling mean, 10000000 doubles, w = 1000
+  NumPy: cumsum, then (c[w:] - c[:-w]) / w                                       min   145.139  median   145.324 ms
+  tenon_kernels.rolling_mean(x, w)            (allocates np.empty, all checks)   min    72.781  median    72.827 ms
+  tenon_kernels.rolling_mean(x, w, out)       (all checks)                       min    54.434  median    54.493 ms
+  kernel call alone (ctypes, no checks)                                          min    54.458  median    54.496 ms
+-- rolling variance, 10000000 doubles, w = 20
+  NumPy: two cumsums, same naive formula, np.maximum(., 0)                       min   467.202  median   467.741 ms
+  tenon_kernels.rolling_var(x, w, out)        (all checks)                       min   109.105  median   109.170 ms
+  tenon_kernels.rolling_std(x, w, out)        (all checks)                       min   163.289  median   163.349 ms
+  kernel call alone, rolling_var (ctypes, no checks)                             min   108.882  median   108.997 ms
+-- integer prefix sum, 10000000 int64: what an output that needs no entry scan saves
+  np.cumsum(xi, out=oi)                                                          min    28.325  median    28.359 ms
+  prefix_sum(xi, oi, wide=False)   out declared ±10^16: scans x AND out          min    39.550  median    39.584 ms
+  prefix_sum(xi, oi)               out declared int64:  scans x only             min    26.618  median    26.661 ms
+  prefix_sum(xi)                   out declared int64, np.empty: scans x only    min    44.369  median    44.446 ms
+  prefix_sum(xi, wide=False)       out declared ±10^16, np.zeros (no scan of out) min    83.278  median    83.425 ms
+  prefix_sum(xi, oi, check=False)  no scan at all                                min    13.603  median    13.630 ms
+  kernel call alone (ctypes, no checks)                                          min    13.586  median    13.602 ms
+  the scan itself: E1+E2 on x (min and max)                                      min    12.877  median    12.897 ms
+-- small calls: fixed cost of the wrapper (microseconds per call)
+  len 8: np.sum(x)                                                               min     3.130  median     3.139 us
+  len 8: tenon_kernels.sum8(x)                                                   min    10.103  median    10.226 us
+  len 8: sum8 kernel alone (ctypes)                                              min     0.986  median     0.989 us
+  len 8: np.dot(x, y)                                                            min     0.910  median     0.912 us
+  len 8: tenon_kernels.dot(x, y)                                                 min    13.620  median    13.709 us
+  len 8: dot kernel alone (ctypes)                                               min     1.323  median     1.326 us
+  len 8: tenon_kernels.ewma(x, 0.05, out)                                        min     9.925  median    10.016 us
+  len 8: ewma kernel alone (ctypes)                                              min     1.202  median     1.204 us
+  len 1024: np.sum(x)                                                            min     3.748  median     3.772 us
+  len 1024: tenon_kernels.sum8(x)                                                min    10.424  median    10.500 us
+  len 1024: sum8 kernel alone (ctypes)                                           min     1.154  median     1.158 us
+  len 1024: np.dot(x, y)                                                         min     1.132  median     1.134 us
+  len 1024: tenon_kernels.dot(x, y)                                              min    14.583  median    14.706 us
+  len 1024: dot kernel alone (ctypes)                                            min     1.591  median     1.595 us
+  len 1024: tenon_kernels.ewma(x, 0.05, out)                                     min    13.416  median    13.538 us
+  len 1024: ewma kernel alone (ctypes)                                           min     4.443  median     4.447 us
+  len 100000: np.sum(x)                                                          min    47.277  median    47.334 us
+  len 100000: tenon_kernels.sum8(x)                                              min    40.819  median    41.093 us
+  len 100000: sum8 kernel alone (ctypes)                                         min    28.059  median    28.086 us
+  len 100000: np.dot(x, y)                                                       min    52.027  median    52.090 us
+  len 100000: tenon_kernels.dot(x, y)                                            min    68.516  median    68.804 us
+  len 100000: dot kernel alone (ctypes)                                          min    52.271  median    52.303 us
+  len 100000: tenon_kernels.ewma(x, 0.05, out)                                   min   325.229  median   325.446 us
+  len 100000: ewma kernel alone (ctypes)                                         min   312.712  median   312.847 us
+-- the entry checks of one float call, separately (microseconds)
+  E1 on a float64 array (dtype, layout; nothing to scan)                         min     0.770  median     0.772 us
+  E4: the generated requirement (a Python lambda)                                min     0.236  median     0.237 us
+  E5: np.may_share_memory(x, out)                                                min     0.435  median     0.436 us
+  E6: tn_fpenv_ok() through ctypes                                               min     0.306  median     0.307 us

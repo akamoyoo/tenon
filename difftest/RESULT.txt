@@ -1,0 +1,327 @@
+Build completed successfully (18 jobs).
+== 1. hand-written programs (Examples.lean), 400 random inputs each ==
+input_sensitive_programs=72
+generated: programs=75 functions=91 emit_errors=0 cases_some=25583 cases_none=3737
+tn_features: forE=57 len=83 sel=19 le=11 lt=8 eq=1 slice_params_read_only=27 slice_params_inout=15 slice_params_private_copy=1
+tn_features: loopE=4 fassign=81 fstore=41 fdecl=78 fite=10 f_lit=78 f_var=239 f_add=101 f_sub=32 f_mul=59 f_div=29 f_idx=122 f_ofInt=32 f_sel=3 f_neg=8 f_abs=12 f_sqrt=8 f_selLe=9 mul_add_shapes=33 add_add_shapes=13 float_params_by_value=3 float_params_inout=4 fslice_params_by_value=25 fslice_params_inout=31
+slices_in_compared_inputs: total=12935 len0=1777 len1=1820 len2to8=2893 len9plus=6445
+features: forN=24 loopB=11 breaks=22 stores=37 decls=102 ifs=47 assigns=120 calls=19 calls_with_inout=15 calls_not_exclusive=2
+params: int_by_value=57 int_inout=8 array_inout=64 array_by_value_read_only=72 array_by_value_private_copy=9 (of_those_stored_into=7 only_passed_inout=2)
+suite-program 0 some=359 none=45 prefix_sum (FnOk proved (PrefixSum.lean))
+suite-program 1 some=352 none=48 prefix_sum_10m (FnOk proved)
+suite-program 2 some=354 none=46 prefix_sum_w (FnOk proved (out: full int64))
+suite-program 3 some=346 none=54 rolling_sum_w (FnOk proved (out: full int64))
+suite-program 4 some=384 none=16 lower_bound (FnOk proved)
+suite-program 5 some=380 none=20 lower_bound_wide (FnOk proved)
+suite-program 6 some=380 none=20 lower_bound_branchy (FnOk proved)
+suite-program 7 some=354 none=50 rolling_sum (FnOk proved (safety; range ±2.1e16))
+suite-program 8 some=358 none=42 rolling_sum_exact (FnOk proved (safety; range ±1e15))
+suite-program 9 some=382 none=18 argmax (FnOk proved)
+suite-program 10 some=385 none=15 argmax_wide (FnOk proved)
+suite-program 11 some=383 none=17 scale_sum (unproved)
+suite-program 12 some=358 none=42 ps_last (unproved)
+suite-program 13 some=153 none=247 ps_arr (unproved)
+suite-program 14 some=67 none=333 sum_slice8 (unproved)
+suite-program 15 some=382 none=18 for_e_probe (unproved)
+suite-program 16 some=363 none=37 sel_mix (unproved)
+suite-program 17 some=312 none=88 len_mix (unproved)
+suite-program 18 some=383 none=17 reverse_slice (unproved)
+suite-program 19 some=350 none=50 s_prefix_sum (FnOk proved (Surface.lean))
+suite-program 20 some=383 none=17 s_count_le (FnOk proved (Surface.lean))
+suite-program 21 some=379 none=21 s_max_step (FnOk proved (Surface.lean))
+suite-program 22 some=384 none=16 s_lower_bound (FnOk proved (Surface.lean; loopE))
+suite-program 23 some=325 none=75 s_argmax (FnOk proved (Surface.lean; sel))
+suite-program 24 some=355 none=45 s_count_prefix_le (FnOk proved (Surface.lean; a call))
+suite-program 25 some=351 none=49 rolling_var_s (FnOk proved (surface syntax))
+suite-program 26 some=351 none=53 ewma (FnOk proved (Ewma.lean))
+suite-program 27 some=341 none=59 ewma_finite (FnOk proved (Ewma.lean))
+suite-program 28 some=333 none=67 sum8 (FnOk proved (Sum8.lean))
+suite-program 29 some=320 none=80 sum8_finite (FnOk proved (Sum8.lean))
+suite-program 30 some=353 none=47 s_ewma (FnOk proved (Surface.lean))
+suite-program 31 some=289 none=111 s_mean_mad (FnOk proved (Surface.lean))
+suite-program 32 some=343 none=57 rolling_mean (FnOk proved)
+suite-program 33 some=346 none=54 rolling_mean_finite (FnOk proved)
+suite-program 34 some=348 none=52 rolling_var (FnOk proved)
+suite-program 35 some=364 none=36 rolling_var_finite (FnOk proved)
+suite-program 36 some=341 none=59 rolling_std (FnOk proved)
+suite-program 37 some=359 none=41 rolling_std_finite (FnOk proved)
+suite-program 38 some=298 none=106 dot (FnOk proved)
+suite-program 39 some=307 none=93 dot_finite (FnOk proved)
+suite-program 40 some=380 none=20 fcontract (unproved)
+suite-program 41 some=375 none=25 funary (unproved)
+suite-program 42 some=386 none=14 fconv (unproved)
+suite-program 43 some=389 none=11 fconv_53 (unproved)
+suite-program 44 some=330 none=70 fmix (unproved)
+suite-program 45 some=346 none=54 fmix_finite (unproved)
+suite-program 46 some=351 none=49 fcall (unproved)
+suite-program 47 some=378 none=26 k3_lower_bound (FnOk proved (from LowerBound3.lean))
+suite-program 48 some=384 none=16 k3_lower_bound_b (FnOk proved (from LowerBound3.lean))
+suite-program 49 some=47 none=3 k3_lower_bound_1024 (FnOk proved)
+suite-program 50 some=48 none=2 k3_lower_bound_b_1024 (FnOk proved)
+suite-program 51 some=378 none=22 k3_use_clear (FnOk proved, both functions)
+suite-program 52 some=383 none=17 k3_clear (FnOk proved)
+suite-program 53 some=380 none=20 k3_swap (FnOk proved)
+suite-program 54 some=379 none=21 k3_ring_push (FnOk proved)
+suite-program 55 some=381 none=19 k3_prefix_sum (FnOk proved (inputs outside the precondition that are not stuck are also compared))
+suite-program 56 some=387 none=13 k3_ring_fill (unproved)
+suite-program 57 some=375 none=25 k3_insert_sorted (unproved)
+suite-program 58 some=374 none=26 k3_insertion_sort (unproved)
+suite-program 59 some=384 none=16 k3_reverse (unproved)
+suite-program 60 some=390 none=10 k3_axpy (unproved)
+suite-program 61 some=382 none=18 k3_axpy_twice (unproved)
+suite-program 62 some=0 none=400 k3_alias_bad (unproved)
+suite-program 63 some=152 none=248 k3_alias_branch (unproved)
+suite-program 64 some=377 none=23 k3_counter_inout (unproved)
+suite-program 65 some=384 none=16 k3_gcd_steps (unproved)
+suite-program 66 some=377 none=23 k3_sum8 (unproved)
+suite-program 67 some=377 none=23 k3_fill_sum (unproved)
+suite-program 68 some=381 none=19 k3_max8 (unproved)
+suite-program 69 some=373 none=27 k3_rank_sum (unproved)
+suite-program 70 some=375 none=25 k3_rank_sum_b (unproved)
+suite-program 71 some=382 none=18 k3_probe (unproved)
+suite-program 72 some=387 none=13 k3_counter_assign (unproved)
+suite-program 73 some=378 none=22 k3_break_nested (unproved)
+suite-program 74 some=378 none=22 k3_arith (unproved)
+expected: programs=75 programs_with_comparable_input=74 inputs_some=25583 inputs_none(skipped)=3737 values_compared=673777 emit_errors=0
+expected floats: float_values=275359 nan=42323 inf=4736 zero=10651 (negative_zero=1369) subnormal=6119
+  clang-O0         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34916
+  clang-O2         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34429
+  gcc-O0           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35064
+  gcc-O2           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35022
+  clang-ubsan      compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34993
+  clang-O2-native  compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34549
+  gcc-O2-native    compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34883
+== 1b. the same hand-written programs with the other three C forms of sel (no hint, lazy ?:, bit mask) ==
+-- sel form plain: 37 lines of C use the form
+expected: programs=75 programs_with_comparable_input=74 inputs_some=25583 inputs_none(skipped)=3737 values_compared=673777 emit_errors=0
+expected floats: float_values=275359 nan=42323 inf=4736 zero=10651 (negative_zero=1369) subnormal=6119
+  clang-O0         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34916
+  clang-O2         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34429
+  gcc-O0           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35064
+  gcc-O2           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35022
+  clang-ubsan      compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34993
+  clang-O2-native  compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34549
+  gcc-O2-native    compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34883
+-- sel form lazy: 37 lines of C use the form
+expected: programs=75 programs_with_comparable_input=74 inputs_some=25583 inputs_none(skipped)=3737 values_compared=673777 emit_errors=0
+expected floats: float_values=275359 nan=42323 inf=4736 zero=10651 (negative_zero=1369) subnormal=6119
+  clang-O0         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34916
+  clang-O2         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34429
+  gcc-O0           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35064
+  gcc-O2           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35022
+  clang-ubsan      compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34993
+  clang-O2-native  compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34549
+  gcc-O2-native    compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34883
+-- sel form mask: 37 lines of C use the form
+expected: programs=75 programs_with_comparable_input=74 inputs_some=25583 inputs_none(skipped)=3737 values_compared=673777 emit_errors=0
+expected floats: float_values=275359 nan=42323 inf=4736 zero=10651 (negative_zero=1369) subnormal=6119
+  clang-O0         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34916
+  clang-O2         compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34429
+  gcc-O0           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35064
+  gcc-O2           compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=35022
+  clang-ubsan      compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34993
+  clang-O2-native  compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34549
+  gcc-O2-native    compared=25583 skipped=3737 mismatches=0 errors=0 | floats_compared_bitwise=275359 float_values_wrong=0 nan_payload_differs=34898
+== 2. random programs: seeds [1 2 3 4 5 6 7 8], 500 programs per seed, 16 inputs per program ==
+-- seed 1: input_sensitive_programs=388 generated: programs=500 functions=1009 emit_errors=0 cases_some=6954 cases_none=1046 tn_features: forE=1627 len=6108 sel=9148 le=5404 lt=3102 eq=3076 slice_params_read_only=130 slice_params_inout=233 slice_params_private_copy=108 tn_features: loopE=695 fassign=1734 fstore=403 fdecl=1049 fite=717 f_lit=2548 f_var=7456 f_add=1727 f_sub=667 f_mul=1224 f_div=249 f_idx=216 f_ofInt=269 f_sel=529 f_neg=235 f_abs=541 f_sqrt=239 f_selLe=491 mul_add_shapes=559 add_add_shapes=318 float_params_by_value=94 float_params_inout=230 fslice_params_by_value=103 fslice_params_inout=214 slices_in_compared_inputs: total=3218 len0=492 len1=434 len2to8=841 len9plus=1451 features: forN=1134 loopB=786 breaks=2010 stores=1073 decls=5608 ifs=14804 assigns=27507 calls=760 calls_with_inout=401 calls_not_exclusive=19 params: int_by_value=583 int_inout=275 array_inout=651 array_by_value_read_only=288 array_by_value_private_copy=276 (of_those_stored_into=255 only_passed_inout=21) 
+expected: programs=500 programs_with_comparable_input=489 inputs_some=6954 inputs_none(skipped)=1046 values_compared=78157 emit_errors=0
+expected floats: float_values=23667 nan=829 inf=362 zero=607 (negative_zero=146) subnormal=749
+  clang-O0         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=413
+  clang-O2         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O0           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+  gcc-O2           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+  clang-ubsan      compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=409
+  clang-O2-native  compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O2-native    compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+-- seed 2: input_sensitive_programs=381 generated: programs=500 functions=976 emit_errors=0 cases_some=7052 cases_none=948 tn_features: forE=1497 len=5558 sel=8503 le=5107 lt=2962 eq=2974 slice_params_read_only=128 slice_params_inout=212 slice_params_private_copy=86 tn_features: loopE=611 fassign=1513 fstore=346 fdecl=947 fite=628 f_lit=2404 f_var=6351 f_add=1408 f_sub=568 f_mul=1020 f_div=231 f_idx=193 f_ofInt=232 f_sel=469 f_neg=223 f_abs=486 f_sqrt=229 f_selLe=474 mul_add_shapes=478 add_add_shapes=257 float_params_by_value=92 float_params_inout=194 fslice_params_by_value=106 fslice_params_inout=190 slices_in_compared_inputs: total=2919 len0=462 len1=417 len2to8=762 len9plus=1278 features: forN=1057 loopB=712 breaks=1821 stores=984 decls=5271 ifs=13906 assigns=26189 calls=664 calls_with_inout=307 calls_not_exclusive=11 params: int_by_value=559 int_inout=284 array_inout=595 array_by_value_read_only=276 array_by_value_private_copy=269 (of_those_stored_into=255 only_passed_inout=14) 
+expected: programs=500 programs_with_comparable_input=490 inputs_some=7052 inputs_none(skipped)=948 values_compared=74391 emit_errors=0
+expected floats: float_values=21448 nan=925 inf=330 zero=584 (negative_zero=124) subnormal=783
+  clang-O0         compared=7052 skipped=948 mismatches=0 errors=0 | floats_compared_bitwise=21448 float_values_wrong=0 nan_payload_differs=537
+  clang-O2         compared=7052 skipped=948 mismatches=0 errors=0 | floats_compared_bitwise=21448 float_values_wrong=0 nan_payload_differs=528
+  gcc-O0           compared=7052 skipped=948 mismatches=0 errors=0 | floats_compared_bitwise=21448 float_values_wrong=0 nan_payload_differs=531
+  gcc-O2           compared=7052 skipped=948 mismatches=0 errors=0 | floats_compared_bitwise=21448 float_values_wrong=0 nan_payload_differs=531
+  clang-ubsan      compared=7052 skipped=948 mismatches=0 errors=0 | floats_compared_bitwise=21448 float_values_wrong=0 nan_payload_differs=529
+  clang-O2-native  compared=7052 skipped=948 mismatches=0 errors=0 | floats_compared_bitwise=21448 float_values_wrong=0 nan_payload_differs=529
+  gcc-O2-native    compared=7052 skipped=948 mismatches=0 errors=0 | floats_compared_bitwise=21448 float_values_wrong=0 nan_payload_differs=537
+-- seed 3: input_sensitive_programs=386 generated: programs=500 functions=1006 emit_errors=0 cases_some=7022 cases_none=978 tn_features: forE=1527 len=5427 sel=8888 le=5320 lt=3155 eq=2996 slice_params_read_only=121 slice_params_inout=227 slice_params_private_copy=89 tn_features: loopE=607 fassign=1522 fstore=360 fdecl=953 fite=590 f_lit=2270 f_var=6507 f_add=1454 f_sub=586 f_mul=1034 f_div=243 f_idx=189 f_ofInt=237 f_sel=452 f_neg=263 f_abs=452 f_sqrt=225 f_selLe=473 mul_add_shapes=497 add_add_shapes=270 float_params_by_value=111 float_params_inout=189 fslice_params_by_value=87 fslice_params_inout=192 slices_in_compared_inputs: total=2992 len0=432 len1=411 len2to8=821 len9plus=1328 features: forN=1180 loopB=740 breaks=1867 stores=1027 decls=5280 ifs=14168 assigns=26590 calls=599 calls_with_inout=320 calls_not_exclusive=16 params: int_by_value=583 int_inout=263 array_inout=654 array_by_value_read_only=272 array_by_value_private_copy=241 (of_those_stored_into=226 only_passed_inout=15) 
+expected: programs=500 programs_with_comparable_input=489 inputs_some=7022 inputs_none(skipped)=978 values_compared=75744 emit_errors=0
+expected floats: float_values=20203 nan=746 inf=276 zero=484 (negative_zero=107) subnormal=720
+  clang-O0         compared=7022 skipped=978 mismatches=0 errors=0 | floats_compared_bitwise=20203 float_values_wrong=0 nan_payload_differs=393
+  clang-O2         compared=7022 skipped=978 mismatches=0 errors=0 | floats_compared_bitwise=20203 float_values_wrong=0 nan_payload_differs=396
+  gcc-O0           compared=7022 skipped=978 mismatches=0 errors=0 | floats_compared_bitwise=20203 float_values_wrong=0 nan_payload_differs=392
+  gcc-O2           compared=7022 skipped=978 mismatches=0 errors=0 | floats_compared_bitwise=20203 float_values_wrong=0 nan_payload_differs=403
+  clang-ubsan      compared=7022 skipped=978 mismatches=0 errors=0 | floats_compared_bitwise=20203 float_values_wrong=0 nan_payload_differs=401
+  clang-O2-native  compared=7022 skipped=978 mismatches=0 errors=0 | floats_compared_bitwise=20203 float_values_wrong=0 nan_payload_differs=396
+  gcc-O2-native    compared=7022 skipped=978 mismatches=0 errors=0 | floats_compared_bitwise=20203 float_values_wrong=0 nan_payload_differs=403
+-- seed 4: input_sensitive_programs=377 generated: programs=500 functions=1005 emit_errors=0 cases_some=7012 cases_none=988 tn_features: forE=1652 len=5615 sel=9173 le=5588 lt=3116 eq=3085 slice_params_read_only=124 slice_params_inout=209 slice_params_private_copy=100 tn_features: loopE=663 fassign=1659 fstore=360 fdecl=972 fite=651 f_lit=2432 f_var=6957 f_add=1498 f_sub=605 f_mul=1125 f_div=263 f_idx=195 f_ofInt=223 f_sel=502 f_neg=248 f_abs=480 f_sqrt=201 f_selLe=507 mul_add_shapes=503 add_add_shapes=269 float_params_by_value=100 float_params_inout=196 fslice_params_by_value=97 fslice_params_inout=193 slices_in_compared_inputs: total=3033 len0=445 len1=432 len2to8=827 len9plus=1329 features: forN=1094 loopB=753 breaks=1914 stores=969 decls=5456 ifs=14574 assigns=27166 calls=709 calls_with_inout=360 calls_not_exclusive=20 params: int_by_value=574 int_inout=305 array_inout=590 array_by_value_read_only=278 array_by_value_private_copy=264 (of_those_stored_into=246 only_passed_inout=18) 
+expected: programs=500 programs_with_comparable_input=493 inputs_some=7012 inputs_none(skipped)=988 values_compared=71223 emit_errors=0
+expected floats: float_values=19998 nan=741 inf=335 zero=484 (negative_zero=107) subnormal=627
+  clang-O0         compared=7012 skipped=988 mismatches=0 errors=0 | floats_compared_bitwise=19998 float_values_wrong=0 nan_payload_differs=379
+  clang-O2         compared=7012 skipped=988 mismatches=0 errors=0 | floats_compared_bitwise=19998 float_values_wrong=0 nan_payload_differs=383
+  gcc-O0           compared=7012 skipped=988 mismatches=0 errors=0 | floats_compared_bitwise=19998 float_values_wrong=0 nan_payload_differs=379
+  gcc-O2           compared=7012 skipped=988 mismatches=0 errors=0 | floats_compared_bitwise=19998 float_values_wrong=0 nan_payload_differs=382
+  clang-ubsan      compared=7012 skipped=988 mismatches=0 errors=0 | floats_compared_bitwise=19998 float_values_wrong=0 nan_payload_differs=380
+  clang-O2-native  compared=7012 skipped=988 mismatches=0 errors=0 | floats_compared_bitwise=19998 float_values_wrong=0 nan_payload_differs=385
+  gcc-O2-native    compared=7012 skipped=988 mismatches=0 errors=0 | floats_compared_bitwise=19998 float_values_wrong=0 nan_payload_differs=383
+-- seed 5: input_sensitive_programs=383 generated: programs=500 functions=1043 emit_errors=0 cases_some=6905 cases_none=1095 tn_features: forE=1644 len=5835 sel=9399 le=5688 lt=3385 eq=3272 slice_params_read_only=120 slice_params_inout=239 slice_params_private_copy=95 tn_features: loopE=733 fassign=1709 fstore=376 fdecl=1001 fite=738 f_lit=2660 f_var=7268 f_add=1560 f_sub=712 f_mul=1207 f_div=239 f_idx=251 f_ofInt=258 f_sel=501 f_neg=238 f_abs=530 f_sqrt=271 f_selLe=552 mul_add_shapes=551 add_add_shapes=295 float_params_by_value=102 float_params_inout=205 fslice_params_by_value=84 fslice_params_inout=193 slices_in_compared_inputs: total=2884 len0=446 len1=438 len2to8=752 len9plus=1248 features: forN=1143 loopB=846 breaks=2094 stores=994 decls=5984 ifs=15500 assigns=28911 calls=769 calls_with_inout=338 calls_not_exclusive=21 params: int_by_value=603 int_inout=292 array_inout=629 array_by_value_read_only=266 array_by_value_private_copy=270 (of_those_stored_into=258 only_passed_inout=12) 
+expected: programs=500 programs_with_comparable_input=487 inputs_some=6905 inputs_none(skipped)=1095 values_compared=72292 emit_errors=0
+expected floats: float_values=20445 nan=713 inf=374 zero=664 (negative_zero=226) subnormal=658
+  clang-O0         compared=6905 skipped=1095 mismatches=0 errors=0 | floats_compared_bitwise=20445 float_values_wrong=0 nan_payload_differs=416
+  clang-O2         compared=6905 skipped=1095 mismatches=0 errors=0 | floats_compared_bitwise=20445 float_values_wrong=0 nan_payload_differs=400
+  gcc-O0           compared=6905 skipped=1095 mismatches=0 errors=0 | floats_compared_bitwise=20445 float_values_wrong=0 nan_payload_differs=398
+  gcc-O2           compared=6905 skipped=1095 mismatches=0 errors=0 | floats_compared_bitwise=20445 float_values_wrong=0 nan_payload_differs=416
+  clang-ubsan      compared=6905 skipped=1095 mismatches=0 errors=0 | floats_compared_bitwise=20445 float_values_wrong=0 nan_payload_differs=401
+  clang-O2-native  compared=6905 skipped=1095 mismatches=0 errors=0 | floats_compared_bitwise=20445 float_values_wrong=0 nan_payload_differs=400
+  gcc-O2-native    compared=6905 skipped=1095 mismatches=0 errors=0 | floats_compared_bitwise=20445 float_values_wrong=0 nan_payload_differs=416
+-- seed 6: input_sensitive_programs=383 generated: programs=500 functions=998 emit_errors=0 cases_some=7085 cases_none=915 tn_features: forE=1689 len=5638 sel=9268 le=5546 lt=3194 eq=3148 slice_params_read_only=120 slice_params_inout=215 slice_params_private_copy=98 tn_features: loopE=651 fassign=1689 fstore=317 fdecl=948 fite=652 f_lit=2315 f_var=7025 f_add=1513 f_sub=649 f_mul=1102 f_div=231 f_idx=178 f_ofInt=260 f_sel=510 f_neg=229 f_abs=491 f_sqrt=255 f_selLe=505 mul_add_shapes=527 add_add_shapes=272 float_params_by_value=106 float_params_inout=194 fslice_params_by_value=75 fslice_params_inout=167 slices_in_compared_inputs: total=2760 len0=402 len1=372 len2to8=778 len9plus=1208 features: forN=1137 loopB=760 breaks=1931 stores=1100 decls=5549 ifs=14599 assigns=27146 calls=696 calls_with_inout=356 calls_not_exclusive=18 params: int_by_value=586 int_inout=313 array_inout=604 array_by_value_read_only=245 array_by_value_private_copy=257 (of_those_stored_into=246 only_passed_inout=11) 
+expected: programs=500 programs_with_comparable_input=495 inputs_some=7085 inputs_none(skipped)=915 values_compared=71819 emit_errors=0
+expected floats: float_values=19322 nan=735 inf=304 zero=543 (negative_zero=90) subnormal=645
+  clang-O0         compared=7085 skipped=915 mismatches=0 errors=0 | floats_compared_bitwise=19322 float_values_wrong=0 nan_payload_differs=365
+  clang-O2         compared=7085 skipped=915 mismatches=0 errors=0 | floats_compared_bitwise=19322 float_values_wrong=0 nan_payload_differs=344
+  gcc-O0           compared=7085 skipped=915 mismatches=0 errors=0 | floats_compared_bitwise=19322 float_values_wrong=0 nan_payload_differs=365
+  gcc-O2           compared=7085 skipped=915 mismatches=0 errors=0 | floats_compared_bitwise=19322 float_values_wrong=0 nan_payload_differs=365
+  clang-ubsan      compared=7085 skipped=915 mismatches=0 errors=0 | floats_compared_bitwise=19322 float_values_wrong=0 nan_payload_differs=355
+  clang-O2-native  compared=7085 skipped=915 mismatches=0 errors=0 | floats_compared_bitwise=19322 float_values_wrong=0 nan_payload_differs=345
+  gcc-O2-native    compared=7085 skipped=915 mismatches=0 errors=0 | floats_compared_bitwise=19322 float_values_wrong=0 nan_payload_differs=366
+-- seed 7: input_sensitive_programs=370 generated: programs=500 functions=1010 emit_errors=0 cases_some=7066 cases_none=934 tn_features: forE=1588 len=5046 sel=8775 le=5287 lt=3189 eq=2946 slice_params_read_only=130 slice_params_inout=192 slice_params_private_copy=83 tn_features: loopE=637 fassign=1503 fstore=320 fdecl=879 fite=577 f_lit=2149 f_var=6240 f_add=1349 f_sub=577 f_mul=930 f_div=236 f_idx=179 f_ofInt=246 f_sel=462 f_neg=251 f_abs=416 f_sqrt=210 f_selLe=468 mul_add_shapes=423 add_add_shapes=239 float_params_by_value=84 float_params_inout=182 fslice_params_by_value=73 fslice_params_inout=179 slices_in_compared_inputs: total=2790 len0=438 len1=406 len2to8=714 len9plus=1232 features: forN=1167 loopB=768 breaks=1930 stores=1041 decls=5652 ifs=14614 assigns=27383 calls=772 calls_with_inout=376 calls_not_exclusive=15 params: int_by_value=579 int_inout=299 array_inout=603 array_by_value_read_only=258 array_by_value_private_copy=256 (of_those_stored_into=246 only_passed_inout=10) 
+expected: programs=500 programs_with_comparable_input=494 inputs_some=7066 inputs_none(skipped)=934 values_compared=72666 emit_errors=0
+expected floats: float_values=19904 nan=670 inf=278 zero=471 (negative_zero=126) subnormal=669
+  clang-O0         compared=7066 skipped=934 mismatches=0 errors=0 | floats_compared_bitwise=19904 float_values_wrong=0 nan_payload_differs=427
+  clang-O2         compared=7066 skipped=934 mismatches=0 errors=0 | floats_compared_bitwise=19904 float_values_wrong=0 nan_payload_differs=429
+  gcc-O0           compared=7066 skipped=934 mismatches=0 errors=0 | floats_compared_bitwise=19904 float_values_wrong=0 nan_payload_differs=431
+  gcc-O2           compared=7066 skipped=934 mismatches=0 errors=0 | floats_compared_bitwise=19904 float_values_wrong=0 nan_payload_differs=429
+  clang-ubsan      compared=7066 skipped=934 mismatches=0 errors=0 | floats_compared_bitwise=19904 float_values_wrong=0 nan_payload_differs=431
+  clang-O2-native  compared=7066 skipped=934 mismatches=0 errors=0 | floats_compared_bitwise=19904 float_values_wrong=0 nan_payload_differs=429
+  gcc-O2-native    compared=7066 skipped=934 mismatches=0 errors=0 | floats_compared_bitwise=19904 float_values_wrong=0 nan_payload_differs=428
+-- seed 8: input_sensitive_programs=381 generated: programs=500 functions=995 emit_errors=0 cases_some=7034 cases_none=966 tn_features: forE=1631 len=5826 sel=9446 le=5622 lt=3214 eq=3216 slice_params_read_only=106 slice_params_inout=211 slice_params_private_copy=105 tn_features: loopE=654 fassign=1557 fstore=339 fdecl=923 fite=630 f_lit=2258 f_var=6590 f_add=1457 f_sub=616 f_mul=1040 f_div=215 f_idx=180 f_ofInt=211 f_sel=449 f_neg=208 f_abs=507 f_sqrt=268 f_selLe=461 mul_add_shapes=514 add_add_shapes=255 float_params_by_value=94 float_params_inout=164 fslice_params_by_value=87 fslice_params_inout=175 slices_in_compared_inputs: total=2742 len0=430 len1=392 len2to8=703 len9plus=1217 features: forN=1142 loopB=788 breaks=1964 stores=1133 decls=5689 ifs=14908 assigns=27527 calls=752 calls_with_inout=355 calls_not_exclusive=20 params: int_by_value=581 int_inout=284 array_inout=620 array_by_value_read_only=235 array_by_value_private_copy=284 (of_those_stored_into=264 only_passed_inout=20) 
+expected: programs=500 programs_with_comparable_input=493 inputs_some=7034 inputs_none(skipped)=966 values_compared=70472 emit_errors=0
+expected floats: float_values=17503 nan=699 inf=267 zero=467 (negative_zero=105) subnormal=584
+  clang-O0         compared=7034 skipped=966 mismatches=0 errors=0 | floats_compared_bitwise=17503 float_values_wrong=0 nan_payload_differs=380
+  clang-O2         compared=7034 skipped=966 mismatches=0 errors=0 | floats_compared_bitwise=17503 float_values_wrong=0 nan_payload_differs=371
+  gcc-O0           compared=7034 skipped=966 mismatches=0 errors=0 | floats_compared_bitwise=17503 float_values_wrong=0 nan_payload_differs=379
+  gcc-O2           compared=7034 skipped=966 mismatches=0 errors=0 | floats_compared_bitwise=17503 float_values_wrong=0 nan_payload_differs=387
+  clang-ubsan      compared=7034 skipped=966 mismatches=0 errors=0 | floats_compared_bitwise=17503 float_values_wrong=0 nan_payload_differs=371
+  clang-O2-native  compared=7034 skipped=966 mismatches=0 errors=0 | floats_compared_bitwise=17503 float_values_wrong=0 nan_payload_differs=371
+  gcc-O2-native    compared=7034 skipped=966 mismatches=0 errors=0 | floats_compared_bitwise=17503 float_values_wrong=0 nan_payload_differs=387
+== 2b. random programs of seed 1 with the other three C forms of sel ==
+-- sel form plain
+expected: programs=500 programs_with_comparable_input=489 inputs_some=6954 inputs_none(skipped)=1046 values_compared=78157 emit_errors=0
+expected floats: float_values=23667 nan=829 inf=362 zero=607 (negative_zero=146) subnormal=749
+  clang-O0         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=413
+  clang-O2         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O0           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+  gcc-O2           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+  clang-ubsan      compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=409
+  clang-O2-native  compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O2-native    compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+-- sel form lazy
+expected: programs=500 programs_with_comparable_input=489 inputs_some=6954 inputs_none(skipped)=1046 values_compared=78157 emit_errors=0
+expected floats: float_values=23667 nan=829 inf=362 zero=607 (negative_zero=146) subnormal=749
+  clang-O0         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=413
+  clang-O2         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O0           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+  gcc-O2           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=411
+  clang-ubsan      compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=409
+  clang-O2-native  compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O2-native    compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=411
+-- sel form mask
+expected: programs=500 programs_with_comparable_input=489 inputs_some=6954 inputs_none(skipped)=1046 values_compared=78157 emit_errors=0
+expected floats: float_values=23667 nan=829 inf=362 zero=607 (negative_zero=146) subnormal=749
+  clang-O0         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=413
+  clang-O2         compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O0           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+  gcc-O2           compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=412
+  clang-ubsan      compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=409
+  clang-O2-native  compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=381
+  gcc-O2-native    compared=6954 skipped=1046 mismatches=0 errors=0 | floats_compared_bitwise=23667 float_values_wrong=0 nan_payload_differs=411
+== 3. self-tests of the harness ==
+3a PASS: the 4 known-stuck inputs of k3_lower_bound are none, 0 of them are called from C
+3a PASS: the 4 known-stuck inputs of rolling_sum are none, 0 of them are called from C
+3a PASS: the 4 known-stuck inputs of prefix_sum are none, 0 of them are called from C
+3a PASS: the 4 known-stuck inputs of ewma are none, 0 of them are called from C
+3a PASS: the 4 known-stuck inputs of dot are none, 0 of them are called from C
+3a PASS: k3_alias_bad (non-exclusive call): 400 inputs, all none, 0 called from C
+3a PASS: k3_alias_branch (non-exclusive call on one branch): 152 inputs compared, 248 none
+3b PASS: 1 error reported for a C result on a none input
+3c PASS: mismatches=1 for one altered final value of an inout parameter ((final parameter values))
+3c2 PASS: an OVERRUN marker in a result line is reported (errors=1)
+3d PASS: breakage 'lt' (98 differing lines of C) detected in suite: mismatches=24172 (wrong=0 missing=24172) float_values_wrong=0
+3d PASS: breakage 'lt' (29044 differing lines of C) detected in r: mismatches=6954 (wrong=0 missing=6954) float_values_wrong=0
+3d PASS: breakage 'noCopy' (45 differing lines of C) detected in suite: mismatches=2694 (wrong=2694 missing=0) float_values_wrong=15439
+3d PASS: breakage 'noCopy' (1324 differing lines of C) detected in r: mismatches=1164 (wrong=1164 missing=0) float_values_wrong=417
+3d PASS: breakage 'counter' (9 differing lines of C) detected in suite: mismatches=1520 (wrong=382 missing=1138) float_values_wrong=0
+3d PASS: breakage 'counter' (963 differing lines of C) detected in r: mismatches=6828 (wrong=0 missing=6828) float_values_wrong=0
+3d PASS: breakage 'noWriteBack' (12 differing lines of C) detected in suite: mismatches=2316 (wrong=2316 missing=0) float_values_wrong=854
+3d PASS: breakage 'noWriteBack' (505 differing lines of C) detected in r: mismatches=1677 (wrong=1677 missing=0) float_values_wrong=913
+3d PASS: breakage 'inoutCopy' (240 differing lines of C) detected in suite: mismatches=14004 (wrong=14004 missing=0) float_values_wrong=114490
+3d PASS: breakage 'inoutCopy' (2283 differing lines of C) detected in r: mismatches=1651 (wrong=1651 missing=0) float_values_wrong=1611
+3d PASS: breakage 'loopBOnce' (23 differing lines of C) detected in suite: mismatches=2516 (wrong=2516 missing=0) float_values_wrong=0
+3d PASS: breakage 'loopBOnce' (2871 differing lines of C) detected in r: mismatches=792 (wrong=792 missing=0) float_values_wrong=266
+3d PASS: breakage 'loopBShort' (22 differing lines of C) detected in suite: mismatches=14 (wrong=14 missing=0) float_values_wrong=0
+3d PASS: breakage 'loopBShort' (1572 differing lines of C) detected in r: mismatches=490 (wrong=490 missing=0) float_values_wrong=197
+3d PASS: breakage 'selSwap' (38 differing lines of C) detected in suite: mismatches=24518 (wrong=0 missing=24518) float_values_wrong=0
+3d PASS: breakage 'selSwap' (11960 differing lines of C) detected in r: mismatches=4931 (wrong=1546 missing=3385) float_values_wrong=560
+3d PASS: breakage 'selTruthy' (10 differing lines of C) detected in suite: mismatches=296 (wrong=296 missing=0) float_values_wrong=0
+3d PASS: breakage 'selTruthy' (4618 differing lines of C) detected in r: mismatches=2852 (wrong=579 missing=2273) float_values_wrong=110
+3d PASS: breakage 'ltAsLe' (22 differing lines of C) detected in suite: mismatches=10677 (wrong=477 missing=10200) float_values_wrong=21
+3d PASS: breakage 'ltAsLe' (5364 differing lines of C) detected in r: mismatches=647 (wrong=647 missing=0) float_values_wrong=101
+3d PASS: breakage 'eqAsLe' (2 differing lines of C) detected in suite: mismatches=246 (wrong=246 missing=0) float_values_wrong=0
+3d PASS: breakage 'eqAsLe' (5430 differing lines of C) detected in r: mismatches=1020 (wrong=1020 missing=0) float_values_wrong=226
+3d PASS: breakage 'leAsLt' (20 differing lines of C) detected in suite: mismatches=286 (wrong=286 missing=0) float_values_wrong=0
+3d PASS: breakage 'leAsLt' (7800 differing lines of C) detected in r: mismatches=615 (wrong=615 missing=0) float_values_wrong=80
+3d PASS: breakage 'lenOff' (152 differing lines of C) detected in suite: mismatches=23929 (wrong=846 missing=23083) float_values_wrong=0
+3d PASS: breakage 'lenOff' (10060 differing lines of C) detected in r: mismatches=6675 (wrong=193 missing=6482) float_values_wrong=0
+3d PASS: breakage 'forEReeval' (115 differing lines of C) detected in suite: mismatches=20588 (wrong=0 missing=20588) float_values_wrong=0
+3d PASS: breakage 'forEReeval' (3566 differing lines of C) detected in r: mismatches=6657 (wrong=0 missing=6657) float_values_wrong=0
+3d PASS: breakage 'forEShort' (114 differing lines of C) detected in suite: mismatches=19444 (wrong=9818 missing=9626) float_values_wrong=10979
+3d PASS: breakage 'forEShort' (3254 differing lines of C) detected in r: mismatches=4806 (wrong=911 missing=3895) float_values_wrong=54
+3d PASS: breakage 'sliceNoCopy' (20 differing lines of C) detected in suite: mismatches=1208 (wrong=1208 missing=0) float_values_wrong=15439
+3d PASS: breakage 'sliceNoCopy' (766 differing lines of C) detected in r: mismatches=655 (wrong=655 missing=0) float_values_wrong=417
+3d PASS: breakage 'fma' (66 differing lines of C) detected in suite: mismatches=634 (wrong=634 missing=0) float_values_wrong=2446
+3d PASS: breakage 'fma' (990 differing lines of C) detected in r: mismatches=20 (wrong=20 missing=0) float_values_wrong=21
+3d PASS: breakage 'reassoc' (10 differing lines of C) detected in suite: mismatches=227 (wrong=227 missing=0) float_values_wrong=456
+3d PASS: breakage 'reassoc' (554 differing lines of C) detected in r: mismatches=7 (wrong=7 missing=0) float_values_wrong=7
+3d PASS: breakage 'selLeNaN' (65 differing lines of C) detected in suite: mismatches=11222 (wrong=824 missing=10398) float_values_wrong=14568
+3d PASS: breakage 'selLeNaN' (8378 differing lines of C) detected in r: mismatches=6912 (wrong=6 missing=6906) float_values_wrong=0
+3d PASS: breakage 'fleAsLt' (38 differing lines of C) detected in suite: mismatches=146 (wrong=146 missing=0) float_values_wrong=241
+3d PASS: breakage 'fleAsLt' (2132 differing lines of C) detected in r: mismatches=6508 (wrong=32 missing=6476) float_values_wrong=21
+3d PASS: breakage 'fselSwap' (6 differing lines of C) detected in suite: mismatches=10387 (wrong=44 missing=10343) float_values_wrong=465
+3d PASS: breakage 'fselSwap' (582 differing lines of C) detected in r: mismatches=806 (wrong=232 missing=574) float_values_wrong=372
+3d PASS: breakage 'ofIntF32' (52 differing lines of C) detected in suite: mismatches=626 (wrong=626 missing=0) float_values_wrong=10516
+3d PASS: breakage 'ofIntF32' (512 differing lines of C) detected in r: mismatches=21 (wrong=21 missing=0) float_values_wrong=24
+3d PASS: breakage 'sqrtF32' (16 differing lines of C) detected in suite: mismatches=10930 (wrong=730 missing=10200) float_values_wrong=6238
+3d PASS: breakage 'sqrtF32' (458 differing lines of C) detected in r: mismatches=4454 (wrong=12 missing=4442) float_values_wrong=11
+3d PASS: breakage 'absDrop' (24 differing lines of C) detected in suite: mismatches=126 (wrong=126 missing=0) float_values_wrong=176
+3d MISS: breakage 'absDrop' (1020 differing lines of C) NOT detected in r
+3d PASS: breakage 'negSub' (16 differing lines of C) detected in suite: mismatches=136 (wrong=136 missing=0) float_values_wrong=160
+3d PASS: breakage 'negSub' (454 differing lines of C) detected in r: mismatches=26 (wrong=26 missing=0) float_values_wrong=26
+3d PASS: breakage 'loopEEval' (8 differing lines of C) detected in suite: mismatches=34 (wrong=34 missing=0) float_values_wrong=0
+3d PASS: breakage 'loopEEval' (1390 differing lines of C) detected in r: mismatches=223 (wrong=223 missing=0) float_values_wrong=60
+3d summary: 51 detections, 1 misses: absDrop(r) 
+== 3e. compiler flags: the emitter's C, unchanged, built in ways the float guarantee forbids ==
+3e clang-fastmath [clang -O2 -std=c11 -ffast-math] on suite: REFUSED AT COMPILE TIME (error: "Tenon float code must not be compiled with -ffast-math, -Ofast or -ffinite-math-on) -- as expected
+3e clang-fastmath [clang -O2 -std=c11 -ffast-math] on r1: REFUSED AT COMPILE TIME (error: "Tenon float code must not be compiled with -ffast-math, -Ofast or -ffinite-math-on) -- as expected
+3e clang-fma-default [clang -O2 -std=c11 -march=native] on suite: no mismatch -- as expected
+3e clang-fma-default [clang -O2 -std=c11 -march=native] on r1: no mismatch -- as expected
+3e clang-fma-fast [clang -O2 -std=c11 -mfma -ffp-contract=fast] on suite: DETECTED: mismatches=592 float_values_wrong=4648 -- as expected
+3e clang-fma-fast [clang -O2 -std=c11 -mfma -ffp-contract=fast] on r1: DETECTED: mismatches=14 float_values_wrong=15 -- as expected
+3e clang-fma-nopragma [clang -O2 -std=c11 -march=native] on suite: DETECTED: mismatches=885 float_values_wrong=5558 -- as expected
+3e clang-fma-nopragma [clang -O2 -std=c11 -march=native] on r1: DETECTED: mismatches=14 float_values_wrong=15 -- as expected
+3e gcc-assoc [gcc -O2 -std=c11 -fassociative-math -fno-signed-zeros -fno-trapping-math] on suite: DETECTED: mismatches=306 float_values_wrong=1427 -- as expected
+3e gcc-assoc [gcc -O2 -std=c11 -fassociative-math -fno-signed-zeros -fno-trapping-math] on r1: DETECTED: mismatches=6444 float_values_wrong=12 -- as expected
+3e gcc-c11-default [gcc -O2 -std=c11 -march=native] on suite: no mismatch -- as expected
+3e gcc-c11-default [gcc -O2 -std=c11 -march=native] on r1: no mismatch -- as expected
+3e gcc-fastmath [gcc -O2 -std=c11 -ffast-math] on suite: REFUSED AT COMPILE TIME (error: #error "Tenon float code must not be compiled with -ffast-math, -Ofast or -ffinite-) -- as expected
+3e gcc-fastmath [gcc -O2 -std=c11 -ffast-math] on r1: REFUSED AT COMPILE TIME (error: #error "Tenon float code must not be compiled with -ffast-math, -Ofast or -ffinite-) -- as expected
+3e gcc-fma-fast [gcc -O2 -std=c11 -mfma -ffp-contract=fast] on suite: DETECTED: mismatches=383 float_values_wrong=1793 -- as expected
+3e gcc-fma-fast [gcc -O2 -std=c11 -mfma -ffp-contract=fast] on r1: DETECTED: mismatches=27 float_values_wrong=37 -- as expected
+3e gcc-gnu11-default [gcc -O2 -std=gnu11 -march=native] on suite: DETECTED: mismatches=885 float_values_wrong=5560 -- as expected
+3e gcc-gnu11-default [gcc -O2 -std=gnu11 -march=native] on r1: DETECTED: mismatches=30 float_values_wrong=40 -- as expected
+3e gcc-no-signed-zero [gcc -O2 -std=c11 -ffp-contract=off -fno-signed-zeros] on suite: DETECTED: mismatches=2 float_values_wrong=2 -- as expected
+3e gcc-no-signed-zero [gcc -O2 -std=c11 -ffp-contract=off -fno-signed-zeros] on r1: DETECTED: mismatches=19 float_values_wrong=19 -- as expected
+3e gcc-x87 [gcc -O2 -std=c11 -ffp-contract=off -mfpmath=387] on suite: REFUSED AT COMPILE TIME (error: #error "Tenon float code needs double arithmetic evaluated in double precision (FLT) -- as expected
+3e gcc-x87 [gcc -O2 -std=c11 -ffp-contract=off -mfpmath=387] on r1: REFUSED AT COMPILE TIME (error: #error "Tenon float code needs double arithmetic evaluated in double precision (FLT) -- as expected
+== total ==
+programs=4075 programs_with_comparable_input=4004 inputs_compared(evalFn=some)=81713 inputs_skipped(evalFn=none)=11607 values_compared=1260541 (of which doubles, compared on the bit pattern: 437849); each compared input was run in 7 C builds (the suite and the first seed in 28: four C forms of sel)
+sums over all batches: input_sensitive_programs=3121 programs=4075 functions=8133 emit_errors=0 cases_some=81713 cases_none=11607 forE=12912 len=45136 sel=72619 le=43573 lt=25325 eq=24714 slice_params_read_only=1006 slice_params_inout=1753 slice_params_private_copy=765 loopE=5255 fassign=12967 fstore=2862 fdecl=7750 fite=5193 f_lit=19114 f_var=54633 f_add=12067 f_sub=5012 f_mul=8741 f_div=1936 f_idx=1703 f_ofInt=1968 f_sel=3877 f_neg=1903 f_abs=3915 f_sqrt=1906 f_selLe=3940 mul_add_shapes=4085 add_add_shapes=2188 float_params_by_value=786 float_params_inout=1558 fslice_params_by_value=737 fslice_params_inout=1534 total=36273 len0=5324 len1=5122 len2to8=9091 len9plus=16736 forN=9078 loopB=6164 breaks=15553 stores=8358 decls=44591 ifs=117120 assigns=218539 calls=5740 calls_with_inout=2828 calls_not_exclusive=142 int_by_value=4705 int_inout=2323 array_inout=5010 array_by_value_read_only=2190 array_by_value_private_copy=2126 of_those_stored_into=2003 only_passed_inout=123
+RESULT: no mismatch

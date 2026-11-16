@@ -1,0 +1,118 @@
+Build completed successfully (8 jobs).
+== compiled Lean ==
+fpcheck: 31971 input pairs (44x44 special, 30000 random, 35 integer), 14 operations, 447594 results; direct Lean operation vs evalFn on the Tenon term: 0 disagreements
+== interpreted Lean (lean --run) ==
+fpcheck: 31971 input pairs (44x44 special, 30000 random, 35 integer), 14 operations, 447594 results; direct Lean operation vs evalFn on the Tenon term: 0 disagreements
+compiled and interpreted Lean: identical results (447594 lines)
+== C built with: <compiler> -std=c11 -w -ffp-contract=off -fno-fast-math ==
+clang-O0: results=447594/447594 bit_equal=423509 both_nan_other_bits=24085 MISMATCH=0
+    add       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    sub       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    mul       equal=30704  nan_other_bits=1267  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x319 7ff8000000000000x311 fffc000000000000x311
+    div       equal=30702  nan_other_bits=1269  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x321 7ff8000000000000x311 fffc000000000000x311
+    neg       equal=31328  nan_other_bits=643   mismatch=0    C NaN patterns: fff8000000000000x158 7ff8000000000000x158 fff8000000000001x158 fff0000000000001x158
+    abs       equal=31486  nan_other_bits=485   mismatch=0    C NaN patterns: 7ff8000000000000x316 7ff8000000000001x158 7ff0000000000001x158 7ff4000000000000x158
+    sqrt      equal=17373  nan_other_bits=14598 mismatch=0    C NaN patterns: fff8000000000000x14113 7ff8000000000001x316 7ff8000000000000x158 fffc000000000000x158
+    muladd    equal=30576  nan_other_bits=1395  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311
+    addadd    equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    selLe     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    selLeMin  equal=31326  nan_other_bits=645   mismatch=0    C NaN patterns: 7ff8000000000000x158 fff8000000000000x158 7ff8000000000001x158 7ff0000000000001x158
+    fite      equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    fiteNot   equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    ofint     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+clang-O2: results=447594/447594 bit_equal=423509 both_nan_other_bits=24085 MISMATCH=0
+    add       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    sub       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    mul       equal=30704  nan_other_bits=1267  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x319 7ff8000000000000x311 fffc000000000000x311
+    div       equal=30702  nan_other_bits=1269  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x321 7ff8000000000000x311 fffc000000000000x311
+    neg       equal=31328  nan_other_bits=643   mismatch=0    C NaN patterns: fff8000000000000x158 7ff8000000000000x158 fff8000000000001x158 fff0000000000001x158
+    abs       equal=31486  nan_other_bits=485   mismatch=0    C NaN patterns: 7ff8000000000000x316 7ff8000000000001x158 7ff0000000000001x158 7ff4000000000000x158
+    sqrt      equal=17373  nan_other_bits=14598 mismatch=0    C NaN patterns: fff8000000000000x14113 7ff8000000000001x316 7ff8000000000000x158 fffc000000000000x158
+    muladd    equal=30576  nan_other_bits=1395  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311
+    addadd    equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    selLe     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    selLeMin  equal=31326  nan_other_bits=645   mismatch=0    C NaN patterns: 7ff8000000000000x158 fff8000000000000x158 7ff8000000000001x158 7ff0000000000001x158
+    fite      equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    fiteNot   equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    ofint     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+clang-O2-native: results=447594/447594 bit_equal=423509 both_nan_other_bits=24085 MISMATCH=0
+    add       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    sub       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    mul       equal=30704  nan_other_bits=1267  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x319 7ff8000000000000x311 fffc000000000000x311
+    div       equal=30702  nan_other_bits=1269  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x321 7ff8000000000000x311 fffc000000000000x311
+    neg       equal=31328  nan_other_bits=643   mismatch=0    C NaN patterns: fff8000000000000x158 7ff8000000000000x158 fff8000000000001x158 fff0000000000001x158
+    abs       equal=31486  nan_other_bits=485   mismatch=0    C NaN patterns: 7ff8000000000000x316 7ff8000000000001x158 7ff0000000000001x158 7ff4000000000000x158
+    sqrt      equal=17373  nan_other_bits=14598 mismatch=0    C NaN patterns: fff8000000000000x14113 7ff8000000000001x316 7ff8000000000000x158 fffc000000000000x158
+    muladd    equal=30576  nan_other_bits=1395  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311
+    addadd    equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    selLe     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    selLeMin  equal=31326  nan_other_bits=645   mismatch=0    C NaN patterns: 7ff8000000000000x158 fff8000000000000x158 7ff8000000000001x158 7ff0000000000001x158
+    fite      equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    fiteNot   equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    ofint     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+gcc-O0: results=447594/447594 bit_equal=423509 both_nan_other_bits=24085 MISMATCH=0
+    add       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    sub       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    mul       equal=30704  nan_other_bits=1267  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x319 7ff8000000000000x311 fffc000000000000x311
+    div       equal=30702  nan_other_bits=1269  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x321 7ff8000000000000x311 fffc000000000000x311
+    neg       equal=31328  nan_other_bits=643   mismatch=0    C NaN patterns: fff8000000000000x158 7ff8000000000000x158 fff8000000000001x158 fff0000000000001x158
+    abs       equal=31486  nan_other_bits=485   mismatch=0    C NaN patterns: 7ff8000000000000x316 7ff8000000000001x158 7ff0000000000001x158 7ff4000000000000x158
+    sqrt      equal=17373  nan_other_bits=14598 mismatch=0    C NaN patterns: fff8000000000000x14113 7ff8000000000001x316 7ff8000000000000x158 fffc000000000000x158
+    muladd    equal=30576  nan_other_bits=1395  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311
+    addadd    equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    selLe     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    selLeMin  equal=31326  nan_other_bits=645   mismatch=0    C NaN patterns: 7ff8000000000000x158 fff8000000000000x158 7ff8000000000001x158 7ff0000000000001x158
+    fite      equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    fiteNot   equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    ofint     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+gcc-O2: results=447594/447594 bit_equal=423509 both_nan_other_bits=24085 MISMATCH=0
+    add       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    sub       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    mul       equal=30704  nan_other_bits=1267  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x319 7ff8000000000000x311 fffc000000000000x311
+    div       equal=30702  nan_other_bits=1269  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x321 7ff8000000000000x311 fffc000000000000x311
+    neg       equal=31328  nan_other_bits=643   mismatch=0    C NaN patterns: fff8000000000000x158 7ff8000000000000x158 fff8000000000001x158 fff0000000000001x158
+    abs       equal=31486  nan_other_bits=485   mismatch=0    C NaN patterns: 7ff8000000000000x316 7ff8000000000001x158 7ff0000000000001x158 7ff4000000000000x158
+    sqrt      equal=17373  nan_other_bits=14598 mismatch=0    C NaN patterns: fff8000000000000x14113 7ff8000000000001x316 7ff8000000000000x158 fffc000000000000x158
+    muladd    equal=30576  nan_other_bits=1395  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311
+    addadd    equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    selLe     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    selLeMin  equal=31326  nan_other_bits=645   mismatch=0    C NaN patterns: 7ff8000000000000x158 fff8000000000000x158 7ff8000000000001x158 7ff0000000000001x158
+    fite      equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    fiteNot   equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    ofint     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+gcc-O2-native: results=447594/447594 bit_equal=423509 both_nan_other_bits=24085 MISMATCH=0
+    add       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    sub       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    mul       equal=30704  nan_other_bits=1267  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x319 7ff8000000000000x311 fffc000000000000x311
+    div       equal=30702  nan_other_bits=1269  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x321 7ff8000000000000x311 fffc000000000000x311
+    neg       equal=31328  nan_other_bits=643   mismatch=0    C NaN patterns: fff8000000000000x158 7ff8000000000000x158 fff8000000000001x158 fff0000000000001x158
+    abs       equal=31486  nan_other_bits=485   mismatch=0    C NaN patterns: 7ff8000000000000x316 7ff8000000000001x158 7ff0000000000001x158 7ff4000000000000x158
+    sqrt      equal=17373  nan_other_bits=14598 mismatch=0    C NaN patterns: fff8000000000000x14113 7ff8000000000001x316 7ff8000000000000x158 fffc000000000000x158
+    muladd    equal=30576  nan_other_bits=1395  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311
+    addadd    equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    selLe     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    selLeMin  equal=31326  nan_other_bits=645   mismatch=0    C NaN patterns: 7ff8000000000000x158 fff8000000000000x158 7ff8000000000001x158 7ff0000000000001x158
+    fite      equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    fiteNot   equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    ofint     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+gcc-O3-native: results=447594/447594 bit_equal=423509 both_nan_other_bits=24085 MISMATCH=0
+    add       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    sub       equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    mul       equal=30704  nan_other_bits=1267  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x319 7ff8000000000000x311 fffc000000000000x311
+    div       equal=30702  nan_other_bits=1269  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x321 7ff8000000000000x311 fffc000000000000x311
+    neg       equal=31328  nan_other_bits=643   mismatch=0    C NaN patterns: fff8000000000000x158 7ff8000000000000x158 fff8000000000001x158 fff0000000000001x158
+    abs       equal=31486  nan_other_bits=485   mismatch=0    C NaN patterns: 7ff8000000000000x316 7ff8000000000001x158 7ff0000000000001x158 7ff4000000000000x158
+    sqrt      equal=17373  nan_other_bits=14598 mismatch=0    C NaN patterns: fff8000000000000x14113 7ff8000000000001x316 7ff8000000000000x158 fffc000000000000x158
+    muladd    equal=30576  nan_other_bits=1395  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311
+    addadd    equal=30710  nan_other_bits=1261  mismatch=0    C NaN patterns: 7ff8000000000001x622 fff8000000000000x313 7ff8000000000000x311 fffc000000000000x311
+    selLe     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    selLeMin  equal=31326  nan_other_bits=645   mismatch=0    C NaN patterns: 7ff8000000000000x158 fff8000000000000x158 7ff8000000000001x158 7ff0000000000001x158
+    fite      equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    fiteNot   equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+    ofint     equal=31971  nan_other_bits=0     mismatch=0    C NaN patterns: -
+== for contrast: the same C with contraction allowed (-mfma -ffp-contract=fast); 'muladd' must differ ==
+clang-fma-fast: results=447594/447594 bit_equal=419434 both_nan_other_bits=24085 MISMATCH=4075
+    muladd    equal=26501  nan_other_bits=1395  mismatch=4075 C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311   FIRST: x=0000000000000001 y=3fe0000000000000 lean=0000000000000001 c=0000000000000002
+gcc-fma-fast: results=447594/447594 bit_equal=419433 both_nan_other_bits=24085 MISMATCH=4076
+    muladd    equal=26500  nan_other_bits=1395  mismatch=4076 C NaN patterns: 7ff8000000000001x622 fff8000000000000x447 7ff8000000000000x311 fffc000000000000x311   FIRST: x=0000000000000001 y=3fe0000000000000 lean=0000000000000001 c=0000000000000002
+RESULT: Lean Float and the generated C agree on every non-NaN result

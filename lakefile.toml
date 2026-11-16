@@ -1,0 +1,46 @@
+name = "tenon"
+defaultTargets = ["Tenon", "Ewma", "Sum8", "Surface", "Emit", "Legacy", "Examples", "KernelFindings", "difftest", "benchgen", "pygen", "fpcheck"]
+
+[[lean_lib]]
+name = "Tenon"
+
+[[lean_lib]]
+name = "Ewma"
+
+[[lean_lib]]
+name = "Sum8"
+
+[[lean_lib]]
+name = "Surface"
+
+[[lean_lib]]
+name = "Emit"
+
+[[lean_lib]]
+name = "KernelFindings"
+
+[[lean_exe]]
+name = "difftest"
+root = "DiffTest"
+srcDir = "difftest"
+
+[[lean_exe]]
+name = "benchgen"
+root = "BenchGen"
+srcDir = "bench"
+
+[[lean_exe]]
+name = "pygen"
+root = "PyGen"
+srcDir = "py"
+
+[[lean_lib]]
+name = "Legacy"
+
+[[lean_lib]]
+name = "Examples"
+
+[[lean_exe]]
+name = "fpcheck"
+root = "FloatCheck"
+srcDir = "floatcheck"

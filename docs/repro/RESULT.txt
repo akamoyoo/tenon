@@ -1,0 +1,29 @@
+expected (Tenon evalFn): 1
+clang -O0                                                                   1
+clang -O1                                                                   1
+clang -O2                                                                   1
+clang -O1 -fsanitize=address                                                1
+clang -O1 -fsanitize=pointer-overflow                                       0
+clang -O1 -fsanitize=object-size                                            0
+clang -O1 -fsanitize=undefined,address (the difftest build)                 0
+clang -O2 -fsanitize=undefined                                              0
+clang -O1 -fsanitize=undefined, input through a volatile (-DRUNTIME)        1
+gcc -O2                                                                     1
+gcc -O1 -fsanitize=undefined,address                                        1
+--- the pass in isolation: opt -passes=float2int float2int.ll (every function must return true)
+define i1 @f() {
+  ret i1 false
+define i1 @g() {
+  ret i1 false
+define i1 @h() {
+  ret i1 true
+define i1 @k() {
+  ret i1 %2
+define i1 @a() {
+  ret i1 false
+--- reference: opt -passes=instcombine float2int.ll
+@f() true
+@g() true
+@h() true
+@k() true
+@a() true

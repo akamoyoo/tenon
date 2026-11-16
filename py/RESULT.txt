@@ -1,0 +1,55 @@
+...........................
+----------------------------------------------------------------------
+Ran 27 tests in 12.466s
+
+OK
+python 3.12.7, numpy 2.2.6
+argmax: 234 inputs equal to np.argmax (ties: first maximum; all INT64_MIN included); empty array refused
+empty arrays: prefix_sum, rolling_sum, lower_bound accept length 0
+lower_bound, lower_bound_branchy: 4450 queries equal to np.searchsorted(side='left')
+lower_bound, lower_bound_branchy: 2000 queries each on 10^6 elements equal to np.searchsorted
+prefix_sum: 145 inputs equal to np.cumsum (lengths 0..1000001)
+prefix_sum: 2 inputs of 10^7 elements equal to np.cumsum (one of them all 10^9: the largest sums)
+rolling_sum: 3360 inputs equal to the cumsum-difference rolling sum (three kernels: out declared int64, ±10^15, ±2.1·10^16)
+rolling_sum: 25 inputs equal to np.convolve(x, ones(w))[:n]
+rolling_sum: 3 inputs of 10^7 elements (w = 10^6 with all elements 10^9: window sum 10^15, the declared bound)
+refused: out sharing memory with x (same array, overlapping views)
+refused: int32, uint64, float64, big-endian int64, list, 2-D, strided view, scalar, None, read-only out, misaligned
+no scan: outputs declared with the full int64 range accept and overwrite arbitrary contents; no float parameter is ever scanned
+refused (generated from req): len(out) != len(x), more than 10^7 elements (10^6 for `prefixSum`)
+refused: elements outside ±10^9, w outside 1..=10^6, non-integer w, p outside int64, out contents outside a declared ±10^15
+zero copy: results are written into the caller's buffer (also through a contiguous view)
+refused: float out sharing memory with x; accepted: dot(x, x) (both by value)
+refused: float32, int64, big-endian float64, list, 2-D, strided view, scalar, None, longdouble, complex, read-only out, misaligned
+refused: float kernels while flush-to-zero / denormals-are-zero is set (E6); accepted again after reset
+requirements: the generated Python checks of 15 kernels agree with Tenon's evalC on 720 argument shapes (533 true, 187 false)
+    tn_prefix_sum: len(x) == len(out) && len(x) <= 1000000
+    tn_prefix_sum_10m: len(x) == len(out) && len(x) <= 10000000
+    tn_prefix_sum_w: len(x) == len(out) && len(x) <= 10000000
+    tn_lower_bound: always
+    tn_lower_bound_branchy: always
+    tn_rolling_sum: len(x) == len(out) && len(x) <= 10000000
+    tn_rolling_sum_exact: len(x) == len(out) && len(x) <= 10000000
+    tn_rolling_sum_w: len(x) == len(out) && len(x) <= 10000000
+    tn_argmax: always
+    tn_ewma: len(x) == len(out)
+    tn_sum8: 1 <= len(out)
+    tn_dot: len(x) == len(y) && 1 <= len(out)
+    tn_rolling_mean: len(x) == len(out)
+    tn_rolling_var: len(x) == len(out)
+    tn_rolling_std: len(x) == len(out)
+refused (generated from req): unequal lengths, empty out for sum8/dot; refused: w outside 1..=10^6, non-integer w, non-float alpha; accepted: alpha = NaN (every double is an f64)
+float zero copy: results are written into the caller's buffer; an output full of NaN is accepted and overwritten
+dot: 140 inputs bitwise equal to the same lane order written in NumPy (products rounded, then added)
+dot vs np.dot, 10^6 normal: bitwise equal: False; relative difference dot - np.dot: 5.52e-15; against fsum of rounded products: dot 9.54e-15, np.dot 4.02e-15
+dot vs np.dot, 10^6 offset: bitwise equal: False; relative difference dot - np.dot: 2.52e-15; against fsum of rounded products: dot 2.31e-15, np.dot 2.10e-16
+ewma: 1151 inputs (1292950 values, NaN, ±inf, ±0, subnormals included) bitwise equal to the plain Python loop
+float kernels accept length 0 (sum8 and dot return 0.0)
+rolling_mean: 148 inputs against the mean of each window computed from scratch; max relative difference: N(0,1) 2.05e-11 (|mean| floored at 1e-3), 1e8+N(0,1) 1.39e-14, small integers 0.0e+00 (exact), 600 binary orders of magnitude 2.02e-16 (relative to the largest |x| so far); 10^6 elements, w=1000: 2.74e-12
+rolling_mean: an infinity in x makes every output after its window NaN (inf - inf), as documented
+rolling_var / rolling_std: 222 inputs against np.var of each window; rolling_std == sqrt(rolling_var) bitwise. Max relative difference where the variance exceeds 1e-3: N(0,1) 2.06e-11, small integers 3.47e-15, 1e8+N(0,1) 1.63e+05 (the naive formula: absolute error 4.6e-14 of x^2); results clamped to 0 where the true variance is positive: N(0,1) 0, small integers 0, 1e8+N(0,1) 53259
+rolling_var: NaN propagates through the clamp; a constant window of 0.1 gives values in [0, 5.6e-18], never negative
+sum8: 168 inputs bitwise equal to the same lane order written in NumPy
+sum8 vs np.sum, 10^6 normal: sum8 == np.sum bitwise: False; relative error against math.fsum: sum8 2.96e-14, np.sum 1.28e-15, left-to-right 3.62e-15
+sum8 vs np.sum, 10^6 wide  : sum8 == np.sum bitwise: False; relative error against math.fsum: sum8 3.96e-15, np.sum 0.00e+00, left-to-right 1.29e-14
+sum8 vs np.sum, 10^6 offset: sum8 == np.sum bitwise: False; relative error against math.fsum: sum8 1.56e-16, np.sum 0.00e+00, left-to-right 3.44e-14
