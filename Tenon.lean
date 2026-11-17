@@ -2213,6 +2213,110 @@ elab "div_bounds" : tactic => withMainContext do
     catch _ => pure ()
   if added == 0 then throwError "div_bounds: no quotient with a provable bound found"
 
+/-! ### Element reasoning, for postconditions and invariants about array contents
+
+    `elem_facts`: for every hypothesis `l[i]? = some v` add `l[i]?.getD 0 = v`, and for every two element
+    reads of the same list whose indices are provably equal (by `omega`) add that they are equal; then
+    linear arithmetic can treat element reads as variables. `inst_foralls`: instantiate every hypothesis
+    `∀ j : Int, a ≤ j → j < b → P j` at every integer variable in scope for which `a ≤ j < b` is provable.
+    Both run their sub-proofs without error recovery, so a failed attempt adds nothing (it cannot turn
+    into an unproved fact). -/
+
+open Lean in
+/-- `l[i]?.getD 0` for a list of integers: the atoms of element reasoning. -/
+def elemAtom? (e : Lean.Expr) : Option (Lean.Expr × Lean.Expr) :=
+  if e.isAppOfArity ``Option.getD 3 then
+    let o := e.getArg! 1
+    if o.isAppOf ``GetElem?.getElem? && o.getAppNumArgs ≥ 2 then
+      let n := o.getAppNumArgs
+      some (o.getArg! (n - 2), o.getArg! (n - 1))
+    else none
+  else none
+
+open Lean Elab Tactic Meta in
+/-- For every hypothesis `l[i]? = some v`, add `l[i]?.getD 0 = v`. -/
+def hypFacts : Lean.Elab.Tactic.TacticM Unit := withMainContext do
+  -- hypotheses l[i]? = some v
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    let t ← instantiateMVars d.type
+    if t.isAppOfArity ``Eq 3 then
+      let lhs := t.getArg! 1
+      let rhs := t.getArg! 2
+      if lhs.isAppOf ``GetElem?.getElem? && rhs.isAppOfArity ``Option.some 2 then
+        let h ← Term.exprToSyntax d.toExpr
+        let sl ← Term.exprToSyntax lhs
+        let sv ← Term.exprToSyntax (rhs.getArg! 1)
+        try withoutRecover <| evalTactic (← `(tactic| have : Option.getD $sl (0 : Int) = $sv := by rw [$h:term]; rfl))
+        catch _ => pure ()
+
+open Lean Elab Tactic Meta in
+/-- For every element read in the goal and every other read of the same list (in the goal or in a
+    hypothesis), add "equal indices give equal elements" as an implication. -/
+def pairFacts : Lean.Elab.Tactic.TacticM Unit := withMainContext do
+  let goal ← getMainGoal
+  let collect (e : Lean.Expr) (acc : Array (Lean.Expr × Lean.Expr × Lean.Expr)) :
+      MetaM (Array (Lean.Expr × Lean.Expr × Lean.Expr)) := do
+    let r ← IO.mkRef acc
+    let _ ← Meta.transform e (pre := fun x => do
+      if let some (l, i) := elemAtom? x then
+        r.modify (fun a => if a.any (fun p => p.1 == x) then a else a.push (x, l, i))
+      return .continue)
+    r.get
+  let inGoal ← collect (← instantiateMVars (← goal.getType)) #[]
+  let mut all := inGoal
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    all ← collect (← instantiateMVars d.type) all
+  for a in inGoal do
+    for b in all do
+      if a.1 == b.1 then continue
+      if !(← isDefEq a.2.1 b.2.1) then continue
+      let ia ← Term.exprToSyntax a.2.2
+      let ib ← Term.exprToSyntax b.2.2
+      let la ← Term.exprToSyntax a.2.1
+      let sa ← Term.exprToSyntax a.1
+      let sb ← Term.exprToSyntax b.1
+      try
+        withoutRecover <| evalTactic (← `(tactic| have : $ia = $ib → $sa = $sb :=
+          fun hk => congrArg (fun k => Option.getD (($la)[k]?) (0 : Int)) hk))
+      catch _ => pure ()
+
+open Lean Elab Tactic in
+elab "elem_facts" : tactic => do
+  hypFacts
+  pairFacts
+
+
+open Lean Elab Tactic Meta in
+/-- Instantiate every hypothesis `∀ j : Int, ...` at every integer variable that occurs in an index of
+    an element read in the goal, as an implication `a ≤ v → v < b → P v`. -/
+elab "inst_foralls" : tactic => withMainContext do
+  let goal ← getMainGoal
+  let tgt ← instantiateMVars (← goal.getType)
+  let idxVars : IO.Ref (Array Lean.Expr) ← IO.mkRef #[]
+  let _ ← Meta.transform tgt (pre := fun x => do
+    if let some (_, i) := elemAtom? x then
+      let _ ← Meta.transform i (pre := fun y => do
+        if y.isFVar && (← inferType y).isConstOf ``Int then
+          idxVars.modify (fun a => if a.contains y then a else a.push y)
+        return .continue)
+    return .continue)
+  let vs ← idxVars.get
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    let t ← instantiateMVars d.type
+    if let .forallE _ ty _ _ := t then
+      if ty.isConstOf ``Int then
+        for v in vs do
+          let sh ← Term.exprToSyntax d.toExpr
+          let sv ← Term.exprToSyntax v
+          try withoutRecover <| evalTactic (← `(tactic| have := $sh $sv))
+          catch _ => pure ()
+
+macro "elem_close" : tactic =>
+  `(tactic| ((try simp only [Option.getD_some, Option.getD_none] at *); inst_foralls; elem_facts; omega))
+
 macro "vc_leaves" : tactic =>
   `(tactic| repeat' (first | (intro _) | omega | (apply And.intro) | assumption | (with_reducible rfl) |
       (simp [inI64]; done) | (simp only [inI64]; omega) | constructor))
@@ -2235,6 +2339,12 @@ macro_rules
 /-- The integer in variable i, and the length of the array in variable i (0 when the variable is of the
     other kind). Used to write invariants. -/
 def geti (env : List Val) (i : Nat) : Int := match env[i]? with | some (.int v) => v | _ => 0
+/-- Element j of the integer array in variable i (0 when there is none). Used to write invariants and
+    postconditions. -/
+def geta (env : List Val) (i : Nat) (j : Int) : Int := match env[i]? with
+  | some (.arr l) => (l[j.toNat]?).getD 0
+  | _ => 0
+
 def leni (env : List Val) (i : Nat) : Int := match env[i]? with
   | some (.arr l) => l.length | some (.farr l) => l.length | _ => 0
 
@@ -2247,7 +2357,7 @@ macro_rules
         try simp [lens, shape] at $hlens:ident
         (repeat cases ‹_ ∧ _›)
         subst_vars
-        try simp [wpS, wpE, wpF, popped, inI64, geti, leni, $defs,*]))
+        try simp [-List.length_eq_zero_iff, -List.length_pos_iff, wpS, wpE, wpF, popped, inI64, geti, leni, geta, List.getElem?_set, $defs,*]))
 
 /-- `kvc f [defs]` proves `FnOk rest f`: open the typed arguments, turn the decidable requirement into
     facts, unfold the obligations, then repeat: arithmetic, splitting, and for every loop obligation
@@ -2261,13 +2371,14 @@ macro_rules
         simp only [$f:ident, List.map] at hin
         env_open_tagged hin
         try simp [$f:ident, evalC, evalCT] at hreq
-        try simp [$f:ident, geti, leni, $defs,*] at hpre
-        simp [$f:ident, wpS, wpE, wpF, popped, inI64, geti, leni, exclusive, argsTyped, lookups, hasAll, Val.has,
+        try simp [$f:ident, geti, leni, geta, List.getElem?_set, $defs,*] at hpre
+        simp [-List.length_eq_zero_iff, -List.length_pos_iff, $f:ident, wpS, wpE, wpF, popped, inI64, geti, leni, geta, List.getElem?_set, exclusive, argsTyped, lookups, hasAll, Val.has,
           evalC, evalCT, $defs,*]
         repeat' (first
           | omega
           | (mul_bounds; omega)
           | (div_bounds; omega)
+          | elem_close
           | apply And.intro
           | (intro (_ : _ ≤ _))
           | (intro (_ : _ < _))
@@ -2275,12 +2386,13 @@ macro_rules
           | (intro (env' : List Val) (hΓ : hasAll _ _ = true) hsame hlens; kvc_open hΓ hsame hlens [$defs,*])
           | (intro (hΓ : hasAll _ _ = true) (hl : lens _ = _); env_open hΓ; simp [lens, shape] at hl;
              (repeat cases ‹_ ∧ _›);
-             try simp [writeBack, wpS, wpE, wpF, popped, inI64, geti, leni, exclusive, argsTyped, lookups, hasAll,
+             try simp [-List.length_eq_zero_iff, -List.length_pos_iff, writeBack, wpS, wpE, wpF, popped, inI64, geti, leni, geta, List.getElem?_set, exclusive, argsTyped, lookups, hasAll,
                Val.has, evalC, evalCT, $defs,*])
           | (intro _)
           | assumption
           | (with_reducible rfl)
-          | (simp [inI64]; done))))
+          | (simp [inI64]; done)
+          | split)))
 
 #print axioms prog_sound
 

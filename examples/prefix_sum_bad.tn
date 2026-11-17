@@ -1,0 +1,15 @@
+// Off by one: the element is stored before it is added. Must be refused.
+fn prefix_sum(x: slice(-1000000000, 1000000000), out: inout slice(-1000000000000000, 1000000000000000))
+    -> int(0, 0)
+  requires (len(x) == len(out) && len(x) <= 1000000)
+  ensures ((len(x) == 0 || out[0] == x[0]) && forall j in 1 .. len(x): out[j] == out[j - 1] + x[j])
+{
+  let acc: int(-1000000000000000, 1000000000000000) = 0;
+  for i upto len(x)
+      invariant (-1000000000 * i <= acc && acc <= 1000000000 * i
+                 && ((i == 0 && acc == 0) || (i >= 1 && acc == out[i - 1] && out[0] == x[0]))
+                 && forall j in 1 .. i: out[j] == out[j - 1] + x[j]) {
+    out[i] = acc;
+    acc = acc + x[i];
+  }
+}

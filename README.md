@@ -207,6 +207,49 @@ its length. The C that comes out contains no check of any of this, and is the C 
 verify it. The rules that turn a function into the facts to be proved are themselves proved sound in
 Lean (`Tenon.lean`). There is no "trust me" switch in the language.
 
+## From "cannot fail" to "computes the right thing"
+
+A function may state what it computes, in an `ensures` clause, and the check then proves that too.
+`examples/prefix_sum.tn`:
+
+```
+fn prefix_sum(x: slice(-1000000000, 1000000000), out: inout slice(-1000000000000000, 1000000000000000))
+    -> int(0, 0)
+  requires (len(x) == len(out) && len(x) <= 1000000)
+  ensures ((len(x) == 0 || out[0] == x[0]) && forall j in 1 .. len(x): out[j] == out[j - 1] + x[j])
+{
+  let acc: int(-1000000000000000, 1000000000000000) = 0;
+  for i upto len(x)
+      invariant (-1000000000 * i <= acc && acc <= 1000000000 * i
+                 && ((i == 0 && acc == 0) || (i >= 1 && acc == out[i - 1] && out[0] == x[0]))
+                 && forall j in 1 .. i: out[j] == out[j - 1] + x[j]) {
+    acc = acc + x[i];
+    out[i] = acc;
+  }
+}
+```
+
+The postcondition is a complete description of prefix sums. Swap the two statements in the loop (store,
+then add: an off-by-one that every test with `out[0]` would catch, and that is easy to miss elsewhere):
+
+```
+$ tenon check examples/prefix_sum_bad.tn
+examples/prefix_sum_bad.tn:8: in `prefix_sum`: cannot show that the invariant of this loop holds again after an iteration
+    needed: acc + v = acc
+```
+
+Postconditions compose. `examples/argmax.tn` proves that `argmax` returns the index of a largest element
+(`forall j in 0 .. len(x): x[j] <= x[result]`), with no branch in its code; `max_value` calls it and
+proves its own postcondition, `forall j in 0 .. len(x): x[j] <= result`, from `argmax`'s postcondition
+alone, without looking at `argmax`'s body. The examples also include `diff` (`out[j] == x[j + 1] - x[j]`)
+and an incorrect version of each, which is refused.
+
+What can be said today: comparisons, `&&`, `||`, array elements `a[t]`, `len(a)`, and bounded quantifiers
+`forall j in lo .. hi: ...` over integers and integer arrays. What cannot: sums or counts over a range
+(so a rolling sum can be proved safe but not yet proved to be a window sum), properties of floats, and
+facts that need induction beyond one loop, such as "sorted adjacent elements imply sorted" (so the binary
+search is proved safe, not yet proved to find the position).
+
 ## The problem this addresses
 
 In code where performance and reliability both matter, memory safety is not the end of it:
@@ -231,6 +274,7 @@ For a program that passes the check (`ProgOk`), called with arguments of the dec
 | No run-time failure | No index out of range, no value outside 64 bits or outside its declared range, no division outside its domain | Theorem `prog_sound`, proved in Lean 4 |
 | Bounded resources | Every function terminates; no allocation; no recursion; stack use is static | By construction: the semantics is a total function defined without fuel, and Lean accepts it |
 | Reproducible results | The result is a function of the arguments, also with `parallel for`, whatever the number of threads | By construction: the semantics is a function; for parallel loops, theorem `parallel_writes`. For floats see the qualification below |
+| Stated means proved | A function's `ensures` clause holds at every return | The same theorem: the postcondition is part of what `FnOk` requires |
 | Unchanged means unchanged | A variable a statement cannot assign has the same value afterwards; no array changes length | Theorems `exec_frame`, `exec_lens` |
 
 Authority confinement (a function reaches the outside world only through capability parameters) is the
@@ -298,8 +342,10 @@ All on one machine (x86-64, clang 21.1.8 and gcc 13, `-O2`), numbers from runs i
   `-ffp-contract=off` and no fast-math option on the compiler command line (gcc ignores the pragma and
   contracts by default). That Lean's `Float` operations are the IEEE-754 operations the C performs is
   tested (every non-NaN result of fourteen operations on 31,971 input pairs agreed), not proved.
-- **`ensures` does not exist in the surface syntax.** What is proved is safety, not that `prefix_sum`
-  computes prefix sums.
+- **Postconditions are limited to what the automatic proof can handle**: linear arithmetic, array
+  elements, bounded quantifiers. It instantiates quantifiers by a heuristic (at the integer variables
+  that index array reads in the goal); a true postcondition outside that is reported as not proved.
+  Checking a file with postconditions takes 15 to 30 seconds on this machine.
 - **Concurrency is one construct.** `parallel for` over independent calls, compiled to OpenMP. No
   threads that communicate, no queues, no components, no shared data structures. The OpenMP runtime is
   trusted, and so is the generated C's property that a callee reads only its arguments (it follows from

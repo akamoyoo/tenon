@@ -1,0 +1,15 @@
+// The two arms of the select swapped. Must be refused.
+fn argmax(x: slice(-1000000000, 1000000000)) -> int(0, 9223372036854775807)
+  requires (1 <= len(x))
+  ensures (result < len(x) && forall j in 0 .. len(x): x[j] <= x[result])
+{
+  let best: int(0, 9223372036854775807) = 0;
+  let bv: int(-1000000000, 1000000000) = x[0];
+  for i upto len(x)
+      invariant (best < len(x) && best <= i && bv == x[best] && forall j in 0 .. i: x[j] <= bv) {
+    let v: int(-1000000000, 1000000000) = x[i];
+    best = sel(v <= bv, i, best);
+    bv = sel(v <= bv, bv, v);
+  }
+  result = best;
+}

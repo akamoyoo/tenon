@@ -54,6 +54,18 @@ kfn f(a: int(0, 100), x: slice(-1000, 1000), out: inout fslice, alpha: f64) -> i
 - An array never changes length, and a variable the function does not assign does not change. Both are
   theorems; you never state them.
 
+## `ensures`
+
+```
+ensures (result < len(x) && forall j in 0 .. len(x): x[j] <= x[result])
+```
+
+A postcondition, proved for every call that satisfies the types and `requires`. In it, `result` is the
+result, an `inout` parameter stands for its value at return, and every other parameter for its value at
+entry. The condition language is the one of invariants (below), with array elements and quantifiers. A
+caller may rely on its callees' postconditions: they are available in the caller's proof, and the
+callee's body is not looked at.
+
 ## `requires`
 
 A condition on the arguments that a caller can check before calling:
@@ -151,9 +163,11 @@ loop upto len(a) + 1 invariant (lo <= hi && hi <= len(a) && hi - lo <= len(a) - 
 for i upto len(x) invariant (always) { ... }
 ```
 
-Terms: integer literals, integer variables in scope, `len(array)`, `+`, `-`, `*`, unary `-`,
-parentheses; the loop variable of a `for`, and `iter_` in any loop, stand for the number of completed
-iterations. Comparisons: `<=`, `<`, `==`, `>=`, `>`. Combination: `&&`. `always` is the trivial invariant.
+Terms: integer literals, integer variables in scope, `len(array)`, elements `a[t]` of integer arrays,
+`+`, `-`, `*`, unary `-`, parentheses; the loop variable of a `for`, and `iter_` in any loop, stand for
+the number of completed iterations. Comparisons: `<=`, `<`, `==`, `>=`, `>`. Combination: `&&`, `||`,
+parentheses, and `forall j in lo .. hi: condition` (for every integer j with lo <= j < hi). `always` is
+the trivial invariant. Array elements and quantifiers are not allowed in `requires`.
 (Inside a Lean file, `invariant_lean (P)` takes an arbitrary Lean proposition instead.)
 
 You do not write, and must not expect to need:

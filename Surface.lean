@@ -48,6 +48,7 @@ declare_syntax_cat kct
 syntax num : kct
 syntax ident : kct
 syntax "len" "(" ident ")" : kct
+syntax ident "[" kct "]" : kct
 syntax:65 kct:65 " + " kct:66 : kct
 syntax:65 kct:65 " - " kct:66 : kct
 syntax:70 kct:70 " * " kct:71 : kct
@@ -62,6 +63,9 @@ syntax kct " == " kct : kc
 syntax kct " >= " kct : kc
 syntax kct " > " kct : kc
 syntax:35 kc:36 " && " kc:35 : kc
+syntax:30 kc:31 " || " kc:30 : kc
+syntax:max "forall " ident " in " kct ".." kct ": " kc : kc
+syntax "(" kc ")" : kc
 
 declare_syntax_cat ks
 syntax "let " ident ":" "int" "(" term "," term ")" " = " kx ";" : ks
@@ -186,44 +190,72 @@ partial def trF (sc : Scope) (e : TSyntax `kx) : MacroM (TSyntax `term) := do
 /-- An invariant: every name in scope stands for its integer value, `name_len` for its length, and the
     given name for the number of completed iterations. -/
 def mkInv (sc : Scope) (it : Name) (p : TSyntax `term) : MacroM (TSyntax `term) := do
+  let envId := mkIdent `env
   let mut body : TSyntax `term := p
   for h : k in [0:sc.size] do
     let n := mkIdent sc[k].1
     let nlen := mkIdent (sc[k].1.appendAfter "_len")
-    body ← `(let $n : Int := Tenon.geti env $(quote k); let $nlen : Int := Tenon.leni env $(quote k); $body)
+    body ← `(let $n : Int := Tenon.geti $envId $(quote k); let $nlen : Int := Tenon.leni $envId $(quote k); $body)
   let itId := mkIdent it
   let iterId := mkIdent (Name.mkSimple "iter_")
-  `(fun (_env0 : List Tenon.Val) (iter : Nat) (env : List Tenon.Val) =>
+  `(fun (_env0 : List Tenon.Val) (iter : Nat) ($envId : List Tenon.Val) =>
       let $iterId : Int := (iter : Int); let $itId : Int := (iter : Int); $body)
 
-/-- A term of an invariant, as a Lean integer term over the names bound by `mkInv`. -/
-partial def trInvT (e : TSyntax `kct) : MacroM (TSyntax `term) := do
+/-- How names of a condition are read: a name in the list stands for a variable of `lst` at a position;
+    any other name (the loop variable, `iter_`, `result`, a quantified variable) is a Lean name bound
+    around the condition. -/
+abbrev Resolver := Name → Option (TSyntax `term × Nat)
+
+/-- A term of an invariant or postcondition, as a Lean integer term. -/
+partial def trInvT (res : Resolver) (e : TSyntax `kct) : MacroM (TSyntax `term) := do
   match e with
   | `(kct| $n:num) => `(($n : Int))
-  | `(kct| $x:ident) => `($x)
-  | `(kct| len($x)) => pure (mkIdent (x.getId.appendAfter "_len"))
-  | `(kct| $a + $b) => do `($(← trInvT a) + $(← trInvT b))
-  | `(kct| $a - $b) => do `($(← trInvT a) - $(← trInvT b))
-  | `(kct| $a * $b) => do `($(← trInvT a) * $(← trInvT b))
-  | `(kct| - $a) => do `(- $(← trInvT a))
-  | `(kct| ($a)) => do `(($(← trInvT a)))
-  | _ => Macro.throwErrorAt e "unsupported term in an invariant"
+  | `(kct| $x:ident) => do
+      match res x.getId with
+      | some (lst, k) => `(Tenon.geti $lst $(quote k))
+      | none => `($x)
+  | `(kct| len($x)) => do
+      match res x.getId with
+      | some (lst, k) => `(Tenon.leni $lst $(quote k))
+      | none => Macro.throwErrorAt x s!"unknown array {x.getId}"
+  | `(kct| $x:ident [ $t ]) => do
+      match res x.getId with
+      | some (lst, k) => `(Tenon.geta $lst $(quote k) $(← trInvT res t))
+      | none => Macro.throwErrorAt x s!"unknown array {x.getId}"
+  | `(kct| $a + $b) => do `($(← trInvT res a) + $(← trInvT res b))
+  | `(kct| $a - $b) => do `($(← trInvT res a) - $(← trInvT res b))
+  | `(kct| $a * $b) => do `($(← trInvT res a) * $(← trInvT res b))
+  | `(kct| - $a) => do `(- $(← trInvT res a))
+  | `(kct| ($a)) => do `(($(← trInvT res a)))
+  | _ => Macro.throwErrorAt e "unsupported term in a condition"
 
-partial def trInvC (c : TSyntax `kc) : MacroM (TSyntax `term) := do
+partial def trInvC (res : Resolver) (c : TSyntax `kc) : MacroM (TSyntax `term) := do
   match c with
   | `(kc| always) => `(True)
-  | `(kc| $a:kct <= $b:kct) => do `($(← trInvT a) ≤ $(← trInvT b))
-  | `(kc| $a:kct < $b:kct) => do `($(← trInvT a) < $(← trInvT b))
-  | `(kc| $a:kct == $b:kct) => do `($(← trInvT a) = $(← trInvT b))
-  | `(kc| $a:kct >= $b:kct) => do `($(← trInvT b) ≤ $(← trInvT a))
-  | `(kc| $a:kct > $b:kct) => do `($(← trInvT b) < $(← trInvT a))
-  | `(kc| $a:kc && $b:kc) => do `($(← trInvC a) ∧ $(← trInvC b))
-  | _ => Macro.throwErrorAt c "unsupported condition in an invariant"
+  | `(kc| $a:kct <= $b:kct) => do `($(← trInvT res a) ≤ $(← trInvT res b))
+  | `(kc| $a:kct < $b:kct) => do `($(← trInvT res a) < $(← trInvT res b))
+  | `(kc| $a:kct == $b:kct) => do `($(← trInvT res a) = $(← trInvT res b))
+  | `(kc| $a:kct >= $b:kct) => do `($(← trInvT res b) ≤ $(← trInvT res a))
+  | `(kc| $a:kct > $b:kct) => do `($(← trInvT res b) < $(← trInvT res a))
+  | `(kc| $a:kc && $b:kc) => do `($(← trInvC res a) ∧ $(← trInvC res b))
+  | `(kc| $a:kc || $b:kc) => do `($(← trInvC res a) ∨ $(← trInvC res b))
+  | `(kc| ($a:kc)) => trInvC res a
+  | `(kc| forall $j:ident in $lo .. $hi : $b:kc) => do
+      let res' : Resolver := fun n => if n == j.getId then none else res n
+      `(∀ $j:ident : Int, $(← trInvT res lo) ≤ $j → $j < $(← trInvT res hi) → $(← trInvC res' b))
+  | _ => Macro.throwErrorAt c "unsupported condition"
+
+/-- The resolver of a loop invariant: the names in scope, except the loop variable and `iter_`. -/
+def scopeRes (sc : Scope) (it : Name) : Resolver := fun n =>
+  if n == it || n == Name.mkSimple "iter_" then none
+  else match find sc n with
+    | some (k, _) => some (mkIdent `env, k)
+    | none => none
 
 /-- The invariant clause of a loop, in either form. -/
 def trInvClause (sc : Scope) (it : Name) (c : TSyntax `kinvc) : MacroM (TSyntax `term) := do
   match c with
-  | `(kinvc| invariant ($p:kc)) => do mkInv sc it (← trInvC p)
+  | `(kinvc| invariant ($p:kc)) => do mkInv sc it (← trInvC (scopeRes sc it) p)
   | `(kinvc| invariant_lean ($p:term)) => mkInv sc it p
   | _ => Macro.throwErrorAt c "unsupported invariant clause"
 
@@ -340,6 +372,7 @@ partial def trCT (sc : Scope) (e : TSyntax `kct) : MacroM (TSyntax `term) := do
   | `(kct| $a - $b) => do `(Tenon.CT.sub $(← trCT sc a) $(← trCT sc b))
   | `(kct| $a * $b) => do `(Tenon.CT.mul $(← trCT sc a) $(← trCT sc b))
   | `(kct| ($a)) => trCT sc a
+  | `(kct| $x:ident [ $_ ]) => Macro.throwErrorAt x "array elements are not allowed in `requires` (yet)"
   | `(kct| - $a) => do `(Tenon.CT.sub (Tenon.CT.lit 0) $(← trCT sc a))
   | _ => Macro.throwErrorAt e "unsupported term in requires"
 
@@ -352,6 +385,7 @@ partial def trCond (sc : Scope) (c : TSyntax `kc) : MacroM (TSyntax `term) := do
   | `(kc| $a:kct >= $b:kct) => do `(Tenon.Cond.le $(← trCT sc b) $(← trCT sc a))
   | `(kc| $a:kct > $b:kct) => do `(Tenon.Cond.lt $(← trCT sc b) $(← trCT sc a))
   | `(kc| $a:kc && $b:kc) => do `(Tenon.Cond.and $(← trCond sc a) $(← trCond sc b))
+  | `(kc| ($a:kc)) => trCond sc a
   | _ => Macro.throwErrorAt c "unsupported condition in requires"
 
 def trParam (p : TSyntax `kparam) : MacroM (Name × Kind × TSyntax `term) := do
@@ -368,25 +402,48 @@ def trParam (p : TSyntax `kparam) : MacroM (Name × Kind × TSyntax `term) := do
 
 end Tenon.Surf
 
-syntax "kfn " ident "(" kparam,* ")" " -> " "int" "(" term "," term ")" " requires " "(" kc ")" (" uses " "[" ident,* "]")? " {" ks* "}" : command
+syntax "kfn " ident "(" kparam,* ")" " -> " "int" "(" term "," term ")" " requires " "(" kc ")" (" ensures " "(" kc ")")? (" uses " "[" ident,* "]")? " {" ks* "}" : command
 
 open Lean Tenon.Surf in
 macro_rules
-  | `(kfn $name:ident ( $ps:kparam,* ) -> int($rlo, $rhi) requires ($req:kc) $[uses [$us,*]]? { $body* }) => do
+  | `(kfn $name:ident ( $ps:kparam,* ) -> int($rlo, $rhi) requires ($req:kc) $[ensures ($ens:kc)]? $[uses [$us,*]]? { $body* }) => do
       let callees : Array Name := match us with | some u => u.getElems.map (·.getId) | none => #[]
       let mut psc : Scope := #[]
       let mut tys : Array (TSyntax `term) := #[]
+      let mut inouts : Array Bool := #[]
       for p in ps.getElems do
         let (n, k, t) ← trParam p
         psc := psc.push (n, k)
         tys := tys.push t
+        inouts := inouts.push (match p with | `(kparam| $_:ident : inout $_:kty) => true | _ => false)
       let sc : Scope := #[(Name.mkSimple "result", Kind.i)] ++ psc
       let tyList : Syntax.TSepArray `term "," := .ofElems tys
+      -- the postcondition: an inout parameter stands for its value at return, any other for its value
+      -- at entry; `result` for the result
+      let argsId := mkIdent `args
+      let outsId := mkIdent `outs
+      let resultId := mkIdent (Name.mkSimple "result")
+      let pres : Resolver := fun n =>
+        match psc.findIdx? (·.1 == n) with
+        | some k => some (if inouts[k]! then outsId else argsId, k)
+        | none => none
+      let post ← match ens with
+        | some e => do `(fun ($argsId : List Tenon.Val) ($resultId : Int) ($outsId : List Tenon.Val) => $(← trInvC pres e))
+        | none => `(fun _ _ _ => True)
+      -- the end of the body carries a label, so that a failed postcondition is reported as such
+      let body0 ← trBlock callees sc body.toList
+      let body1 ← match ens with
+        | some e => do
+            let pos := match e.raw.getPos? with | some p => p.byteIdx | none => 0
+            let names := ",".intercalate (sc.toList.map (fun p => toString p.1))
+            let lbl : TSyntax `term := quote s!"@{pos}|{names}|ensures"
+            `(Tenon.Stmt.seq $body0 (Tenon.Stmt.note $lbl Tenon.Stmt.skip))
+        | none => pure body0
       `(def $name : Tenon.Fn where
           params := [$tyList,*]
           rlo := $rlo
           rhi := $rhi
-          body := $(← trBlock callees sc body.toList)
+          body := $body1
           req := $(← trCond psc req)
           pre := fun _ => True
-          post := fun _ _ _ => True)
+          post := $post)

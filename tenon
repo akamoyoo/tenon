@@ -133,7 +133,36 @@ def rename(hyps, goal, names):
     return g, True
 
 
+def unparen_elems(g):
+    """`x[(t).toNat]?.getD 0` and `x[t.toNat]?.getD 0` become `x[t]`; `(some (e)).getD 0` becomes `e`."""
+    out, k = [], 0
+    while k < len(g):
+        m = re.match(r'([A-Za-z_][A-Za-z_0-9✝⁰¹²³⁴⁵⁶⁷⁸⁹]*)\[', g[k:])
+        if m and (k == 0 or not (g[k - 1].isalnum() or g[k - 1] == '_')):
+            start = k + m.end()
+            depth, e = 1, start
+            while e < len(g) and depth:
+                depth += {'[': 1, ']': -1}.get(g[e], 0)
+                e += 1
+            inner = g[start:e - 1]
+            rest = g[e:]
+            if rest.startswith('?.getD 0'):
+                inner = re.sub(r'\.toNat$', '', inner)
+                if inner.startswith('(') and inner.endswith(')'):
+                    inner = inner[1:-1]
+                out.append(f'{m.group(1)}[{unparen_elems(inner)}]')
+                k = e + len('?.getD 0')
+                continue
+        out.append(g[k]); k += 1
+    g = ''.join(out)
+    g = re.sub(r'\(some \((.*?)\)\)\.getD 0', r'\1', g)
+    g = re.sub(r'\(some ([^()]*?)\)\.getD 0', r'\1', g)
+    return g
+
+
 def pretty(goal):
+    goal = unparen_elems(goal)
+    goal = re.sub(r'([A-Za-z_])✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', r'\1', goal)
     g = goal.replace(I64MIN, 'INT64_MIN').replace(I64MAX, 'INT64_MAX')
     g = re.sub(r'i✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', '<iteration>', g)
     g = re.sub(r'v✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', '<element>', g)

@@ -1,0 +1,26 @@
+// Index of a largest element, without a branch. The postcondition says it is one.
+fn argmax(x: slice(-1000000000, 1000000000)) -> int(0, 9223372036854775807)
+  requires (1 <= len(x))
+  ensures (result < len(x) && forall j in 0 .. len(x): x[j] <= x[result])
+{
+  let best: int(0, 9223372036854775807) = 0;
+  let bv: int(-1000000000, 1000000000) = x[0];
+  for i upto len(x)
+      invariant (best < len(x) && best <= i && bv == x[best] && forall j in 0 .. i: x[j] <= bv) {
+    let v: int(-1000000000, 1000000000) = x[i];
+    best = sel(v <= bv, best, i);
+    bv = sel(v <= bv, bv, v);
+  }
+  result = best;
+}
+
+// The largest value, proved from argmax's postcondition alone: the caller never looks at argmax's body.
+fn max_value(x: slice(-1000000000, 1000000000)) -> int(-1000000000, 1000000000)
+  requires (1 <= len(x))
+  ensures (forall j in 0 .. len(x): x[j] <= result)
+  uses [argmax]
+{
+  let k: int(0, 9223372036854775807) = 0;
+  k = argmax(x);
+  result = x[k];
+}

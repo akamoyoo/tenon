@@ -1,0 +1,9 @@
+// Differences of neighbours: out[j] = x[j+1] - x[j].
+fn diff(x: slice(-1000000000, 1000000000), out: inout slice(-2000000000, 2000000000)) -> int(0, 0)
+  requires (1 <= len(x) && len(out) + 1 == len(x))
+  ensures (forall j in 0 .. len(x) - 1: out[j] == x[j + 1] - x[j])
+{
+  for i upto len(x) - 1 invariant (forall j in 0 .. i: out[j] == x[j + 1] - x[j]) {
+    out[i] = x[i + 1] - x[i];
+  }
+}
