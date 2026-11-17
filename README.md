@@ -162,15 +162,18 @@ There are no locks in the language, so there is nothing to deadlock on.
 
 ## What a Tenon function looks like
 
-`examples/rolling_sum.tn`, the corrected first example:
+`examples/rolling_sum_spec.tn`, the corrected first example, now with a statement of what it computes:
 
 ```
 fn rolling_sum(x: slice(-1000000000, 1000000000), w: int(1, 1000000),
                out: inout slice(-9223372036854775807, 9223372036854775807)) -> int(0, 0)
   requires (len(x) == len(out) && len(x) <= 1000000)
+  ensures (forall j in 0 .. len(x): out[j] == sum(x, max(0, j + 1 - w), j + 1))
 {
   let acc: int(-2000000000000000, 2000000000000000) = 0;
-  for i upto len(x) invariant (-2000000000 * i <= acc && acc <= 2000000000 * i) {
+  for i upto len(x)
+      invariant (-2000000000 * i <= acc && acc <= 2000000000 * i && acc == sum(x, max(0, i - w), i)
+                 && forall j in 0 .. i: out[j] == sum(x, max(0, j + 1 - w), j + 1)) {
     if w <= i { acc = acc + x[i] - x[i - w]; } else { acc = acc + x[i]; }
     out[i] = acc;
   }
@@ -178,34 +181,55 @@ fn rolling_sum(x: slice(-1000000000, 1000000000), w: int(1, 1000000),
 ```
 
 ```
-$ tenon check examples/rolling_sum.tn
-examples/rolling_sum.tn: `rolling_sum`: proved
+$ tenon check examples/rolling_sum_spec.tn
+examples/rolling_sum_spec.tn: `rolling_sum`: proved
+1 function(s) proved
 
-$ tenon emit examples/rolling_sum.tn
+$ tenon emit examples/rolling_sum_spec.tn
+examples/rolling_sum_spec.tn: `rolling_sum`: proved
+1 function(s) proved
+#include <stdint.h>
+
 int64_t rolling_sum(const int64_t *restrict x, int64_t x_len, int64_t w, int64_t *restrict out, int64_t out_len)
 {
     int64_t result = 0;
-    int64_t acc = 0;
-    for (int64_t i = 0, i_end = x_len; i < i_end; i++) {
-        if (w <= i) {
-            acc = acc + x[i] - x[i - w];
-        } else {
-            acc = acc + x[i];
+    {
+        int64_t acc = 0;
+        for (int64_t i = 0, i_end = x_len; i < i_end; i++) {
+            if (w <= i) {
+                acc = acc + x[i] - x[i - w];
+            } else {
+                acc = acc + x[i];
+            }
+            out[i] = acc;
         }
-        out[i] = acc;
     }
     return result;
 }
 ```
 
-What the author wrote beyond the code: the ranges in the types, the `requires` clause, and one loop
-invariant. What was proved from that, for every input the signature admits: no index is out of range, no
-arithmetic leaves 64 bits or a declared range, the loop terminates, `x` is not modified and `out` keeps
-its length. The C that comes out contains no check of any of this, and is the C one would write by hand.
+What the author wrote beyond the code: the ranges in the types, `requires`, `ensures`, and one loop
+invariant. What was proved from that, for every input the signature admits: `out[j]` is the sum of the
+last `w` elements up to `j` (fewer at the start); no index is out of range; no arithmetic leaves 64 bits
+or a declared range; the loop terminates; `x` is not modified and `out` keeps its length. The C contains
+no check of any of this, and is the C one would write by hand. Move the element that leaves the window
+by one (`if w <= i + 1 { acc = acc + x[i] - x[i - w + 1]; }`), which is still safe, and the check fails:
+
+```
+$ tenon check examples/rolling_sum_spec_bad.tn
+examples/rolling_sum_spec_bad.tn:8: in `rolling_sum`: cannot show that the invariant of this loop holds again after an iteration
+    for i upto len(x)
+    needed: acc + v - v = sum(x, max(0, i + 1 - w), i + 1)
+    (1 more obligation(s) of `rolling_sum` not shown; they often follow from the first. `tenon check -a` shows all.)
+1 of 1 function(s) not proved
+```
+
+(`v` is a value read from `x`; the message says the new window sum does not follow.)
 
 "Proved" means proved: `tenon check` writes one theorem per function and has Lean, a proof checker,
-verify it. The rules that turn a function into the facts to be proved are themselves proved sound in
-Lean (`Tenon.lean`). There is no "trust me" switch in the language.
+verify it, and rejects any theorem that depends on an unproved placeholder. The rules that turn a
+function into the facts to be proved are themselves proved sound in Lean (`Tenon.lean`). There is no
+"trust me" switch in the language.
 
 ## From "cannot fail" to "computes the right thing"
 
@@ -244,11 +268,13 @@ proves its own postcondition, `forall j in 0 .. len(x): x[j] <= result`, from `a
 alone, without looking at `argmax`'s body. The examples also include `diff` (`out[j] == x[j + 1] - x[j]`)
 and an incorrect version of each, which is refused.
 
-What can be said today: comparisons, `&&`, `||`, array elements `a[t]`, `len(a)`, and bounded quantifiers
-`forall j in lo .. hi: ...` over integers and integer arrays. What cannot: sums or counts over a range
-(so a rolling sum can be proved safe but not yet proved to be a window sum), properties of floats, and
-facts that need induction beyond one loop, such as "sorted adjacent elements imply sorted" (so the binary
-search is proved safe, not yet proved to find the position).
+What can be said today: comparisons, `&&`, `||`, array elements `a[t]`, `len(a)`, `max`, `min`, range
+sums `sum(a, lo, hi)` (`a[lo] + ... + a[hi - 1]`), and bounded quantifiers `forall j in lo .. hi: ...`,
+over integers and integer arrays. Prefix sums are also specified with `sum` in
+`examples/prefix_sum_spec.tn`. What cannot: counts over a range, sums of products (so the notional is
+proved safe, not yet proved to be the sum of price times quantity), properties of floats, and facts that
+need induction beyond one loop, such as "sorted adjacent elements imply sorted" (so the binary search is
+proved safe, not yet proved to find the position).
 
 ## The problem this addresses
 
@@ -343,9 +369,13 @@ All on one machine (x86-64, clang 21.1.8 and gcc 13, `-O2`), numbers from runs i
   contracts by default). That Lean's `Float` operations are the IEEE-754 operations the C performs is
   tested (every non-NaN result of fourteen operations on 31,971 input pairs agreed), not proved.
 - **Postconditions are limited to what the automatic proof can handle**: linear arithmetic, array
-  elements, bounded quantifiers. It instantiates quantifiers by a heuristic (at the integer variables
-  that index array reads in the goal); a true postcondition outside that is reported as not proved.
-  Checking a file with postconditions takes 15 to 30 seconds on this machine.
+  elements, range sums whose bounds move by one element per iteration, bounded quantifiers. It
+  instantiates quantifiers by a heuristic (at the integer variables that index array reads in the goal);
+  a true postcondition outside that is reported as not proved.
+- **Checking is slow the first time.** A file with postconditions takes 8 to 20 seconds on this machine
+  (most of it simplification and arithmetic inside Lean), a file without them 4 to 7. Functions are
+  proved in parallel, and a proof is remembered: an unchanged function, with unchanged callees and an
+  unchanged language, is not proved again (about 0.3 seconds for an unchanged file).
 - **Concurrency is one construct.** `parallel for` over independent calls, compiled to OpenMP. No
   threads that communicate, no queues, no components, no shared data structures. The OpenMP runtime is
   trusted, and so is the generated C's property that a callee reads only its arguments (it follows from

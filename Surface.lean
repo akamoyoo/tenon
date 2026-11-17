@@ -49,6 +49,8 @@ syntax num : kct
 syntax ident : kct
 syntax "len" "(" ident ")" : kct
 syntax ident "[" kct "]" : kct
+syntax "sum" "(" ident "," kct "," kct ")" : kct
+syntax ident "(" kct "," kct ")" : kct
 syntax:65 kct:65 " + " kct:66 : kct
 syntax:65 kct:65 " - " kct:66 : kct
 syntax:70 kct:70 " * " kct:71 : kct
@@ -222,6 +224,14 @@ partial def trInvT (res : Resolver) (e : TSyntax `kct) : MacroM (TSyntax `term) 
       match res x.getId with
       | some (lst, k) => `(Tenon.geta $lst $(quote k) $(← trInvT res t))
       | none => Macro.throwErrorAt x s!"unknown array {x.getId}"
+  | `(kct| sum($x, $lo, $hi)) => do
+      match res x.getId with
+      | some (lst, k) => `(Tenon.sumA (Tenon.getl $lst $(quote k)) $(← trInvT res lo) $(← trInvT res hi))
+      | none => Macro.throwErrorAt x s!"unknown array {x.getId}"
+  | `(kct| $f:ident ($a, $b)) => do
+      if f.getId == `max then `(Max.max $(← trInvT res a) $(← trInvT res b))
+      else if f.getId == `min then `(Min.min $(← trInvT res a) $(← trInvT res b))
+      else Macro.throwErrorAt f s!"unknown function {f.getId} (known: max, min, sum, len)"
   | `(kct| $a + $b) => do `($(← trInvT res a) + $(← trInvT res b))
   | `(kct| $a - $b) => do `($(← trInvT res a) - $(← trInvT res b))
   | `(kct| $a * $b) => do `($(← trInvT res a) * $(← trInvT res b))
@@ -373,6 +383,8 @@ partial def trCT (sc : Scope) (e : TSyntax `kct) : MacroM (TSyntax `term) := do
   | `(kct| $a * $b) => do `(Tenon.CT.mul $(← trCT sc a) $(← trCT sc b))
   | `(kct| ($a)) => trCT sc a
   | `(kct| $x:ident [ $_ ]) => Macro.throwErrorAt x "array elements are not allowed in `requires` (yet)"
+  | `(kct| sum($x, $_, $_)) => Macro.throwErrorAt x "sums are not allowed in `requires` (yet)"
+  | `(kct| $f:ident ($_, $_)) => Macro.throwErrorAt f s!"{f.getId} is not allowed in `requires` (yet)"
   | `(kct| - $a) => do `(Tenon.CT.sub (Tenon.CT.lit 0) $(← trCT sc a))
   | _ => Macro.throwErrorAt e "unsupported term in requires"
 

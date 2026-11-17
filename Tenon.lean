@@ -2213,6 +2213,63 @@ elab "div_bounds" : tactic => withMainContext do
     catch _ => pure ()
   if added == 0 then throwError "div_bounds: no quotient with a provable bound found"
 
+/-- The integer in variable i, and the length of the array in variable i (0 when the variable is of the
+    other kind). Used to write invariants. -/
+def geti (env : List Val) (i : Nat) : Int := match env[i]? with | some (.int v) => v | _ => 0
+/-- Element j of the integer array in variable i (0 when there is none). Used to write invariants and
+    postconditions. -/
+def geta (env : List Val) (i : Nat) (j : Int) : Int := match env[i]? with
+  | some (.arr l) => (l[j.toNat]?).getD 0
+  | _ => 0
+
+/-- The integer array in variable i (empty when there is none). -/
+def getl (env : List Val) (i : Nat) : List Int := match env[i]? with
+  | some (.arr l) => l
+  | _ => []
+
+/-! ### Range sums, for postconditions and invariants -/
+
+def sumN (l : List Int) (lo : Int) : Nat → Int
+  | 0 => 0
+  | n + 1 => sumN l lo n + (l[(lo + n).toNat]?.getD 0)
+
+/-- `l[lo] + ... + l[hi - 1]`; 0 when the range is empty. -/
+def sumA (l : List Int) (lo hi : Int) : Int := sumN l lo (hi - lo).toNat
+
+theorem sumA_congr (l : List Int) (a1 b1 a2 b2 : Int) (ha : a1 = a2) (hb : b1 = b2) : sumA l a1 b1 = sumA l a2 b2 := by
+  subst ha; subst hb; rfl
+
+theorem sumA_empty (l : List Int) (a b : Int) (h : b ≤ a) : sumA l a b = 0 := by
+  unfold sumA
+  have : (b - a).toNat = 0 := by omega
+  rw [this]; rfl
+
+theorem sumA_right (l : List Int) (a b : Int) (h : a ≤ b) : sumA l a (b + 1) = sumA l a b + (l[b.toNat]?.getD 0) := by
+  unfold sumA
+  have h1 : (b + 1 - a).toNat = (b - a).toNat + 1 := by omega
+  rw [h1, sumN]
+  have h2 : a + ((b - a).toNat : Int) = b := by omega
+  rw [h2]
+
+theorem sumN_left (l : List Int) : ∀ (n : Nat) (a : Int), sumN l a (n + 1) = (l[a.toNat]?.getD 0) + sumN l (a + 1) n := by
+  intro n
+  induction n with
+  | zero => intro a; simp [sumN]
+  | succ k ih =>
+    intro a
+    rw [sumN, ih a, sumN]
+    have : a + 1 + (k : Int) = a + ((k + 1 : Nat) : Int) := by omega
+    rw [this]; omega
+
+theorem sumA_left (l : List Int) (a b : Int) (h : a < b) : sumA l a b = (l[a.toNat]?.getD 0) + sumA l (a + 1) b := by
+  unfold sumA
+  have h1 : (b - a).toNat = (b - (a + 1)).toNat + 1 := by omega
+  rw [h1, sumN_left]
+
+
+def leni (env : List Val) (i : Nat) : Int := match env[i]? with
+  | some (.arr l) => l.length | some (.farr l) => l.length | _ => 0
+
 /-! ### Element reasoning, for postconditions and invariants about array contents
 
     `elem_facts`: for every hypothesis `l[i]? = some v` add `l[i]?.getD 0 = v`, and for every two element
@@ -2221,6 +2278,12 @@ elab "div_bounds" : tactic => withMainContext do
     `∀ j : Int, a ≤ j → j < b → P j` at every integer variable in scope for which `a ≤ j < b` is provable.
     Both run their sub-proofs without error recovery, so a failed attempt adds nothing (it cannot turn
     into an unproved fact). -/
+
+open Lean Meta in
+/-- Does `e` mention only variables of the current context? Terms found inside a quantified hypothesis
+    mention the quantifier's variable, which exists only there: facts about them must not be added. -/
+def inScope (lctx : LocalContext) (e : Lean.Expr) : Bool :=
+  !(e.hasAnyFVar (fun f => !lctx.contains f))
 
 open Lean in
 /-- `l[i]?.getD 0` for a list of integers: the atoms of element reasoning. -/
@@ -2258,9 +2321,11 @@ def pairFacts : Lean.Elab.Tactic.TacticM Unit := withMainContext do
   let collect (e : Lean.Expr) (acc : Array (Lean.Expr × Lean.Expr × Lean.Expr)) :
       MetaM (Array (Lean.Expr × Lean.Expr × Lean.Expr)) := do
     let r ← IO.mkRef acc
+    let outer ← getLCtx
     let _ ← Meta.transform e (pre := fun x => do
       if let some (l, i) := elemAtom? x then
-        r.modify (fun a => if a.any (fun p => p.1 == x) then a else a.push (x, l, i))
+        if inScope outer x then
+          r.modify (fun a => if a.any (fun p => p.1 == x) then a else a.push (x, l, i))
       return .continue)
     r.get
   let inGoal ← collect (← instantiateMVars (← goal.getType)) #[]
@@ -2277,10 +2342,26 @@ def pairFacts : Lean.Elab.Tactic.TacticM Unit := withMainContext do
       let la ← Term.exprToSyntax a.2.1
       let sa ← Term.exprToSyntax a.1
       let sb ← Term.exprToSyntax b.1
+      -- equal indices: an equation; provably different: nothing; otherwise an implication for omega
+      let eq ← (try
+          withoutRecover <| evalTactic (← `(tactic| have : $sa = $sb :=
+            congrArg (fun k => Option.getD (($la)[k]?) (0 : Int)) (show $ia = $ib by omega)))
+          pure true
+        catch _ => pure false)
+      if eq then continue
+      let ne ← (try
+          withoutRecover <| evalTactic (← `(tactic| have _hne : $ia ≠ $ib := by omega))
+          evalTactic (← `(tactic| clear _hne))
+          pure true
+        catch _ => pure false)
+      if ne then continue
       try
         withoutRecover <| evalTactic (← `(tactic| have : $ia = $ib → $sa = $sb :=
           fun hk => congrArg (fun k => Option.getD (($la)[k]?) (0 : Int)) hk))
       catch _ => pure ()
+
+open Lean Elab Tactic in
+elab "hypFacts_tac" : tactic => hypFacts
 
 open Lean Elab Tactic in
 elab "elem_facts" : tactic => do
@@ -2295,10 +2376,11 @@ elab "inst_foralls" : tactic => withMainContext do
   let goal ← getMainGoal
   let tgt ← instantiateMVars (← goal.getType)
   let idxVars : IO.Ref (Array Lean.Expr) ← IO.mkRef #[]
+  let outer ← getLCtx
   let _ ← Meta.transform tgt (pre := fun x => do
     if let some (_, i) := elemAtom? x then
       let _ ← Meta.transform i (pre := fun y => do
-        if y.isFVar && (← inferType y).isConstOf ``Int then
+        if y.isFVar && inScope outer y && (← inferType y).isConstOf ``Int then
           idxVars.modify (fun a => if a.contains y then a else a.push y)
         return .continue)
     return .continue)
@@ -2311,11 +2393,148 @@ elab "inst_foralls" : tactic => withMainContext do
         for v in vs do
           let sh ← Term.exprToSyntax d.toExpr
           let sv ← Term.exprToSyntax v
+          -- the side conditions provable: the instance itself; otherwise the instance as an implication
+          let done ← (try
+              withoutRecover <| evalTactic (← `(tactic| have := $sh $sv (by omega) (by omega)))
+              pure true
+            catch _ => pure false)
+          if done then continue
           try withoutRecover <| evalTactic (← `(tactic| have := $sh $sv))
           catch _ => pure ()
 
+open Lean Elab Tactic Meta in
+/-- Facts about range sums, aimed at loops whose window grows by one element at the right and may lose
+    one at the left. From every sum `S(a, b)` of a hypothesis: `S(a, b+1) = S(a, b) + l[b]`, and of that
+    sum `S(a, b+1) = l[a] + S(a+1, b+1)`; for every sum: empty ranges give 0; and every sum of the goal
+    equals every other sum of the same list over equal bounds. A fact whose side condition `omega`
+    proves is added as an equation, any other as an implication. -/
+elab "sum_facts" : tactic => withMainContext do
+  let goal ← getMainGoal
+  let collect (e : Lean.Expr) (acc : Array Lean.Expr) : MetaM (Array Lean.Expr) := do
+    let r ← IO.mkRef acc
+    let outer ← getLCtx
+    let _ ← Meta.transform e (pre := fun x => do
+      if x.isAppOfArity ``Tenon.sumA 3 then
+        if inScope outer x then
+          r.modify (fun a => if a.contains x then a else a.push x)
+      return .continue)
+    r.get
+  let inGoal ← collect (← instantiateMVars (← goal.getType)) #[]
+  let mut inHyps : Array Lean.Expr := #[]
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    inHyps ← collect (← instantiateMVars d.type) inHyps
+  if inGoal.isEmpty && inHyps.isEmpty then throwError "sum_facts: no range sum"
+  let addFact (cond eqn prf : TSyntax `term) : TacticM Unit := do
+    let yes ← (try
+        withoutRecover <| evalTactic (← `(tactic| have : $eqn := $prf (by omega)))
+        pure true
+      catch _ => pure false)
+    if yes then return
+    try withoutRecover <| evalTactic (← `(tactic| have : $cond → $eqn := $prf))
+    catch _ => pure ()
+  for t in inHyps do
+    let l ← Term.exprToSyntax (t.getArg! 0)
+    let a ← Term.exprToSyntax (t.getArg! 1)
+    let b ← Term.exprToSyntax (t.getArg! 2)
+    addFact (← `($a ≤ $b)) (← `(Tenon.sumA $l $a ($b + 1) = Tenon.sumA $l $a $b + (($l)[($b).toNat]?.getD 0)))
+      (← `(Tenon.sumA_right $l $a $b))
+    addFact (← `($a < $b + 1)) (← `(Tenon.sumA $l $a ($b + 1) = (($l)[($a).toNat]?.getD 0) + Tenon.sumA $l ($a + 1) ($b + 1)))
+      (← `(Tenon.sumA_left $l $a ($b + 1)))
+  -- empty ranges, and equal bounds
+  withMainContext do
+    let goal ← getMainGoal
+    let mut all ← collect (← instantiateMVars (← goal.getType)) #[]
+    for d in (← getLCtx) do
+      if d.isImplementationDetail then continue
+      all ← collect (← instantiateMVars d.type) all
+    for t in all do
+      let l ← Term.exprToSyntax (t.getArg! 0)
+      let a ← Term.exprToSyntax (t.getArg! 1)
+      let b ← Term.exprToSyntax (t.getArg! 2)
+      try withoutRecover <| evalTactic (← `(tactic| have : Tenon.sumA $l $a $b = 0 := Tenon.sumA_empty $l $a $b (by omega)))
+      catch _ => pure ()
+    for g in inGoal do
+      for t in all do
+        if g == t then continue
+        if !(← isDefEq (g.getArg! 0) (t.getArg! 0)) then continue
+        let l ← Term.exprToSyntax (g.getArg! 0)
+        let a1 ← Term.exprToSyntax (g.getArg! 1)
+        let b1 ← Term.exprToSyntax (g.getArg! 2)
+        let a2 ← Term.exprToSyntax (t.getArg! 1)
+        let b2 ← Term.exprToSyntax (t.getArg! 2)
+        let yes ← (try
+            withoutRecover <| evalTactic (← `(tactic| have : Tenon.sumA $l $a1 $b1 = Tenon.sumA $l $a2 $b2 :=
+              Tenon.sumA_congr $l $a1 $b1 $a2 $b2 (by omega) (by omega)))
+            pure true
+          catch _ => pure false)
+        if yes then continue
+        try
+          withoutRecover <| evalTactic (← `(tactic| have : $a1 = $a2 → $b1 = $b2 → Tenon.sumA $l $a1 $b1 = Tenon.sumA $l $a2 $b2 :=
+            Tenon.sumA_congr $l $a1 $b1 $a2 $b2))
+        catch _ => pure ()
+
+open Lean Elab Tactic Meta in
+/-- `pairFacts` over every element read (not only those of the goal): used after `sum_facts`, which
+    introduces element reads in hypotheses. -/
+elab "elem_facts_all" : tactic => withMainContext do
+  let goal ← getMainGoal
+  let collect (e : Lean.Expr) (acc : Array (Lean.Expr × Lean.Expr × Lean.Expr)) :
+      MetaM (Array (Lean.Expr × Lean.Expr × Lean.Expr)) := do
+    let r ← IO.mkRef acc
+    let outer ← getLCtx
+    let _ ← Meta.transform e (pre := fun x => do
+      if let some (l, i) := elemAtom? x then
+        if inScope outer x then
+          r.modify (fun a => if a.any (fun p => p.1 == x) then a else a.push (x, l, i))
+      return .continue)
+    r.get
+  let mut all ← collect (← instantiateMVars (← goal.getType)) #[]
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    all ← collect (← instantiateMVars d.type) all
+  for i in [0:all.size] do
+    for j in [i+1:all.size] do
+      let a := all[i]!
+      let b := all[j]!
+      if !(← isDefEq a.2.1 b.2.1) then continue
+      let ia ← Term.exprToSyntax a.2.2
+      let ib ← Term.exprToSyntax b.2.2
+      let la ← Term.exprToSyntax a.2.1
+      let sa ← Term.exprToSyntax a.1
+      let sb ← Term.exprToSyntax b.1
+      try
+        withoutRecover <| evalTactic (← `(tactic| have : $sa = $sb :=
+          congrArg (fun k => Option.getD (($la)[k]?) (0 : Int)) (show $ia = $ib by omega)))
+      catch _ => pure ()
+
+open Lean Elab Tactic Meta in
+/-- Succeeds if the goal or a hypothesis mentions a range sum (`has_sums`), or if none does (`no_sums`). -/
+def sumsPresent : TacticM Bool := withMainContext do
+  let isSum (x : Lean.Expr) : Bool := x.isAppOfArity ``Tenon.sumA 3
+  if ((← instantiateMVars (← (← getMainGoal).getType)).find? isSum).isSome then return true
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    if ((← instantiateMVars d.type).find? isSum).isSome then return true
+  return false
+
+open Lean Elab Tactic Meta in
+/-- Succeeds if the goal contains an `if`: split it before trying the expensive closers. -/
+elab "has_ite" : tactic => withMainContext do
+  let t ← instantiateMVars (← (← getMainGoal).getType)
+  if (t.find? (fun x => x.isAppOf ``ite || x.isAppOf ``dite)).isNone then throwError "no if"
+
+open Lean Elab Tactic in
+elab "has_sums" : tactic => do if !(← sumsPresent) then throwError "no range sum"
+
+open Lean Elab Tactic in
+elab "no_sums" : tactic => do if ← sumsPresent then throwError "range sums present"
+
 macro "elem_close" : tactic =>
   `(tactic| ((try simp only [Option.getD_some, Option.getD_none] at *); inst_foralls; elem_facts; omega))
+
+macro "sum_close" : tactic =>
+  `(tactic| (has_sums; (try simp only [Option.getD_some, Option.getD_none] at *); inst_foralls; sum_facts; hypFacts_tac; elem_facts_all; omega))
 
 macro "vc_leaves" : tactic =>
   `(tactic| repeat' (first | (intro _) | omega | (apply And.intro) | assumption | (with_reducible rfl) |
@@ -2336,18 +2555,6 @@ macro_rules
         try simp [wpS, wpE, wpF, popped, inI64, $defs,*]
         vc_leaves))
 
-/-- The integer in variable i, and the length of the array in variable i (0 when the variable is of the
-    other kind). Used to write invariants. -/
-def geti (env : List Val) (i : Nat) : Int := match env[i]? with | some (.int v) => v | _ => 0
-/-- Element j of the integer array in variable i (0 when there is none). Used to write invariants and
-    postconditions. -/
-def geta (env : List Val) (i : Nat) (j : Int) : Int := match env[i]? with
-  | some (.arr l) => (l[j.toNat]?).getD 0
-  | _ => 0
-
-def leni (env : List Val) (i : Nat) : Int := match env[i]? with
-  | some (.arr l) => l.length | some (.farr l) => l.length | _ => 0
-
 syntax "kvc_open" ident ident ident "[" Lean.Parser.Tactic.simpLemma,* "]" : tactic
 macro_rules
   | `(tactic| kvc_open $hΓ:ident $hsame:ident $hlens:ident [$defs,*]) =>
@@ -2357,7 +2564,7 @@ macro_rules
         try simp [lens, shape] at $hlens:ident
         (repeat cases ‹_ ∧ _›)
         subst_vars
-        try simp [-List.length_eq_zero_iff, -List.length_pos_iff, wpS, wpE, wpF, popped, inI64, geti, leni, geta, List.getElem?_set, $defs,*]))
+        try simp [-List.length_eq_zero_iff, -List.length_pos_iff, wpS, wpE, wpF, popped, inI64, geti, leni, geta, getl, List.getElem?_set, $defs,*]))
 
 /-- `kvc f [defs]` proves `FnOk rest f`: open the typed arguments, turn the decidable requirement into
     facts, unfold the obligations, then repeat: arithmetic, splitting, and for every loop obligation
@@ -2371,22 +2578,24 @@ macro_rules
         simp only [$f:ident, List.map] at hin
         env_open_tagged hin
         try simp [$f:ident, evalC, evalCT] at hreq
-        try simp [$f:ident, geti, leni, geta, List.getElem?_set, $defs,*] at hpre
-        simp [-List.length_eq_zero_iff, -List.length_pos_iff, $f:ident, wpS, wpE, wpF, popped, inI64, geti, leni, geta, List.getElem?_set, exclusive, argsTyped, lookups, hasAll, Val.has,
+        try simp [$f:ident, geti, leni, geta, getl, List.getElem?_set, $defs,*] at hpre
+        simp [-List.length_eq_zero_iff, -List.length_pos_iff, $f:ident, wpS, wpE, wpF, popped, inI64, geti, leni, geta, getl, List.getElem?_set, exclusive, argsTyped, lookups, hasAll, Val.has,
           evalC, evalCT, $defs,*]
         repeat' (first
+          | apply And.intro
+          | (intro (i : Nat) (env' : List Val) hi (hΓ : hasAll _ _ = true) hsame hlens; kvc_open hΓ hsame hlens [$defs,*])
+          | (intro (env' : List Val) (hΓ : hasAll _ _ = true) hsame hlens; kvc_open hΓ hsame hlens [$defs,*])
+          | (intro (_ : _ ≤ _))
+          | (intro (_ : _ < _))
           | omega
           | (mul_bounds; omega)
           | (div_bounds; omega)
+          | (has_ite; split)
           | elem_close
-          | apply And.intro
-          | (intro (_ : _ ≤ _))
-          | (intro (_ : _ < _))
-          | (intro (i : Nat) (env' : List Val) hi (hΓ : hasAll _ _ = true) hsame hlens; kvc_open hΓ hsame hlens [$defs,*])
-          | (intro (env' : List Val) (hΓ : hasAll _ _ = true) hsame hlens; kvc_open hΓ hsame hlens [$defs,*])
+          | sum_close
           | (intro (hΓ : hasAll _ _ = true) (hl : lens _ = _); env_open hΓ; simp [lens, shape] at hl;
              (repeat cases ‹_ ∧ _›);
-             try simp [-List.length_eq_zero_iff, -List.length_pos_iff, writeBack, wpS, wpE, wpF, popped, inI64, geti, leni, geta, List.getElem?_set, exclusive, argsTyped, lookups, hasAll,
+             try simp [-List.length_eq_zero_iff, -List.length_pos_iff, writeBack, wpS, wpE, wpF, popped, inI64, geti, leni, geta, getl, List.getElem?_set, exclusive, argsTyped, lookups, hasAll,
                Val.has, evalC, evalCT, $defs,*])
           | (intro _)
           | assumption

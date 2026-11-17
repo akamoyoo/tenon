@@ -20,6 +20,8 @@ fn name(params) -> int(lo, hi)
 ```
 tenon check file.tn      prove every function; report what could not be proved and where
 tenon emit file.tn       the same, then print the C for the file if everything was proved
+tenon check -a file.tn   show every obligation that failed, not only the first per function
+tenon check -v file.tn   also show Lean's own output
 ```
 
 `tenon` writes one theorem per function and has Lean check it. A function is accepted only if Lean
@@ -164,10 +166,11 @@ for i upto len(x) invariant (always) { ... }
 ```
 
 Terms: integer literals, integer variables in scope, `len(array)`, elements `a[t]` of integer arrays,
+`sum(a, lo, hi)` (the sum of `a[lo]` to `a[hi - 1]`, 0 for an empty range), `max(s, t)`, `min(s, t)`,
 `+`, `-`, `*`, unary `-`, parentheses; the loop variable of a `for`, and `iter_` in any loop, stand for
 the number of completed iterations. Comparisons: `<=`, `<`, `==`, `>=`, `>`. Combination: `&&`, `||`,
 parentheses, and `forall j in lo .. hi: condition` (for every integer j with lo <= j < hi). `always` is
-the trivial invariant. Array elements and quantifiers are not allowed in `requires`.
+the trivial invariant. Array elements, sums, `max`, `min` and quantifiers are not allowed in `requires`.
 (Inside a Lean file, `invariant_lean (P)` takes an arbitrary Lean proposition instead.)
 
 You do not write, and must not expect to need:
@@ -183,6 +186,15 @@ What you do write is what relates the variables the loop changes: `lo <= hi`, `c
 To find an invariant for an integer accumulator, ask how large it can be after `i` iterations and write
 that bound; then choose the accumulator's declared range to contain the bound at the largest length
 `requires` allows.
+
+## Speed
+
+The first check of a file takes seconds (8 to 20 with postconditions on the author's machine). Each
+function is proved in its own Lean process, in parallel, and a successful proof is remembered under a
+hash of the language, the function and everything it is checked against: an unchanged function is not
+proved again. For a range sum in an invariant, write it so that one iteration moves each bound by at most
+one element (`sum(x, max(0, i - w), i)` to `sum(x, max(0, i + 1 - w), i + 1)`): that is the shape the
+automatic proof knows.
 
 ## When the check fails
 
@@ -216,7 +228,8 @@ final values of the parameters have the parameter types and the same lengths. "N
 index, every integer operation, every division, every call's requirement, and every `loop` leaving by
 `break` within its bound.
 
-What it does not give you: that the function computes what you meant. There is no `ensures` yet.
+What it does not give you: that the function computes what you meant, beyond what its `ensures` states.
+With `ensures`, `FnOk` also gives that the postcondition holds at return.
 
 ## From Tenon to a running kernel
 

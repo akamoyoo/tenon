@@ -7,6 +7,10 @@
     tenon check -v FILE.tn     also print the raw output of the proof checker for failures
     tenon emit FILE.tn         check, and if every function is proved, print the C for the file
 
+Each function is proved in its own Lean process, in parallel. A proof is remembered (in
+.lake/tenon-cache) under a hash of the language and of the function with everything it is checked
+against; an unchanged function is not proved again.
+
 A .tn file contains functions and comments (`// ...` to the end of a line) and nothing else:
 
     fn name(params) -> int(lo, hi)
@@ -46,15 +50,15 @@ def generate(src, fns):
     lean = HEADER + body
     if not lean.endswith('\n'):
         lean += '\n'
-    thm_line = {}
     params = {}
     for m in re.finditer(r'^fn\s+([A-Za-z_][A-Za-z_0-9]*)\s*\((.*?)\)\s*->', src, re.M | re.S):
         params[m.group(1)] = re.findall(r'([A-Za-z_][A-Za-z_0-9]*)\s*:', m.group(2))
+    thms = {}
     for name, callees, _ in fns:
         cs = ', '.join(callees)
-        thm_line[lean.count('\n') + 2] = name                # the line of `theorem`
-        lean += (f'\nopen Tenon in\ntheorem {name}_ok : FnOk [{cs}] {name} := by\n'
-                 f'  have _args : Tag "@0|{",".join(params[name])}" := Tag.intro _\n  kvc {name} [{cs}]\n')
+        thms[name] = (f'\nopen Tenon in\ntheorem {name}_ok : FnOk [{cs}] {name} := by\n'
+                      f'  have _args : Tag "@0|{",".join(params[name])}" := Tag.intro _\n  kvc {name} [{cs}]\n'
+                      f'#print axioms {name}_ok\n')
     order = ', '.join(n for n, _, _ in reversed(fns))        # a program lists its functions newest first
     starts = [m.start() for m in re.finditer(r'^fn\s', src, re.M)] + [len(src)]
     local = {}
@@ -68,7 +72,7 @@ def generate(src, fns):
     emit = ('\nopen Tenon Tenon.Emit in\n#eval match emitProgram {} [' + order + '] [' + names + '] with\n'
             '  | .ok c => IO.println ("//TENON-C-BEGIN\\n" ++ c ++ "\\n//TENON-C-END")\n'
             '  | .error e => IO.println ("TENON-EMIT-ERROR " ++ e)\n')
-    return lean, thm_line, emit
+    return lean, thms, emit
 
 
 def messages(out):
@@ -160,8 +164,41 @@ def unparen_elems(g):
     return g
 
 
+def unsum(g):
+    """`sumA x a b` becomes `sum(x, a, b)`; `max a b` becomes `max(a, b)`."""
+    def args(t, k, n):
+        out = []
+        while len(out) < n and k < len(t):
+            while k < len(t) and t[k] == ' ':
+                k += 1
+            if k < len(t) and t[k] == '(':
+                depth, e = 1, k + 1
+                while e < len(t) and depth:
+                    depth += {'(': 1, ')': -1}.get(t[e], 0)
+                    e += 1
+                out.append(t[k + 1:e - 1]); k = e
+            else:
+                m = re.match(r'[^\s()]+', t[k:])
+                if not m:
+                    break
+                out.append(m.group(0)); k += m.end()
+        return out, k
+    for fn, n in (('sumA', 3), ('max', 2), ('min', 2)):
+        while True:
+            m = re.search(r'(?<![A-Za-z_.])' + fn + r' ', g)
+            if not m:
+                break
+            a, end = args(g, m.end(), n)
+            if len(a) != n:
+                break
+            name = 'sum' if fn == 'sumA' else fn
+            g = g[:m.start()] + f'{name}(' + ', '.join(unsum(x) for x in a) + ')' + g[end:]
+    return g
+
+
 def pretty(goal):
     goal = unparen_elems(goal)
+    goal = unsum(goal)
     goal = re.sub(r'([A-Za-z_])✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', r'\1', goal)
     g = goal.replace(I64MIN, 'INT64_MIN').replace(I64MAX, 'INT64_MAX')
     g = re.sub(r'i✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', '<iteration>', g)
@@ -175,6 +212,43 @@ def kind(goal):
     return 'cannot show'
 
 
+SRC = ['']
+
+
+def describe(name, hyps, goal, src_lines, src_line_of_pos):
+    """One obligation that could not be proved, in the words of the source."""
+    tag = None
+    for h in hyps:
+        m = re.search(r'Tag "@(\d+)\|([^"|]*)(\|(?:inv|ensures))?"', h)
+        if m:
+            tag = m
+    if not tag:
+        return f'{SRC[0]}: in `{name}`: {kind(goal)}\n    needed: {pretty(goal)}   (values shown with internal names)'
+    sl = src_line_of_pos(int(tag.group(1)))
+    names = [n for n in tag.group(2).split(',') if n]
+    g = goal if '✝' not in re.sub(r'[iv]✝', '', goal) else rename(hyps, goal, names)[0]
+    g = re.sub(r'↑?([A-Za-z_][A-Za-z_0-9]*)\.length', r'len(\1)', g).replace('↑', '')
+    code = src_lines[sl - 1].strip() if 0 < sl <= len(src_lines) else ''
+    counter = 'iter_'
+    for back in range(sl - 1, -1, -1):                       # the nearest loop above this line
+        lm = re.match(r'\s*(?:for\s+([A-Za-z_][A-Za-z_0-9]*)\s+upto|loop\b)', src_lines[back])
+        if lm:
+            counter = lm.group(1) or 'iter_'
+            break
+    g = re.sub(r'i✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', counter, g)
+    what = kind(goal)
+    if tag.group(3) == '|inv':
+        what = 'cannot show that the invariant of this loop holds again after an iteration'
+    elif tag.group(3) == '|ensures':
+        what = 'cannot show the postcondition'
+    elif code.startswith('loop') and what == 'cannot show':
+        what = ('cannot show that this loop leaves by `break` within its bound '
+                '(or that its invariant holds on entry)')
+    elif code.startswith('for') and what == 'cannot show':
+        what = 'cannot show that the invariant of this loop holds on entry'
+    return f'{SRC[0]}:{sl}: in `{name}`: {what}\n    {code}\n    needed: {pretty(g)}'
+
+
 def main():
     args = [a for a in sys.argv[1:] if a not in ('-v', '-a')]
     verbose = '-v' in sys.argv
@@ -182,90 +256,90 @@ def main():
     if len(args) != 2 or args[0] not in ('check', 'emit'):
         sys.exit(__doc__)
     path = args[1]
+    SRC[0] = path
     src = open(path).read()
     src_lines = src.splitlines()
     fns = functions(src)
     if not fns:
         sys.exit(f'{path}: no function found (a function starts with `fn name(` at the start of a line)')
-    lean, thm_line, emit_cmd = generate(src, fns)
-    if args[0] == 'emit':
-        lean += emit_cmd
+    base, thms, emit_cmd = generate(src, fns)
     work = os.path.join(ROOT, '.lake', 'tenon-check')
+    cache = os.path.join(ROOT, '.lake', 'tenon-cache')
     os.makedirs(work, exist_ok=True)
-    gen = os.path.join(work, 'Check.lean')
-    open(gen, 'w').write(lean)
-    lean_bytes = lean.encode()
+    os.makedirs(cache, exist_ok=True)
     env = dict(os.environ, PATH=os.path.expanduser('~/.elan/bin') + os.pathsep + os.environ.get('PATH', ''))
     b = subprocess.run(['lake', 'build', 'Surface', 'Emit'], cwd=ROOT, env=env, capture_output=True, text=True)
     if b.returncode != 0:
         sys.exit('tenon: the language itself failed to build:\n' + b.stdout[-2000:] + b.stderr[-2000:])
-    p = subprocess.run(['lake', 'env', 'lean', gen], cwd=ROOT, env=env, capture_output=True, text=True)
-    msgs = [m for m in messages(p.stdout + p.stderr) if m[2] == 'error']
-    n_src = lean.count('\n', 0, len(HEADER) + len(src)) + 1
+    import hashlib, concurrent.futures
+    lang = hashlib.sha256()
+    for f in ('Tenon.lean', 'Surface.lean', 'Emit.lean'):
+        lang.update(open(os.path.join(ROOT, f), 'rb').read())
+    jobs = {}
+    for name, _, _ in fns:
+        text = base + thms[name]
+        key = hashlib.sha256(lang.digest() + text.encode()).hexdigest()
+        jobs[name] = (text, key)
+
+    def prove(name):
+        text, key = jobs[name]
+        if os.path.exists(os.path.join(cache, key)):
+            return name, '', True
+        gen = os.path.join(work, f'Check_{name}.lean')
+        open(gen, 'w').write(text)
+        r = subprocess.run(['lake', 'env', 'lean', gen], cwd=ROOT, env=env, capture_output=True, text=True)
+        out = r.stdout + r.stderr
+        ok = r.returncode == 0 and not any(m[2] == 'error' for m in messages(out))
+        # belt and braces: a theorem that depends on `sorryAx` is not proved, whatever else was printed
+        if f"'{name}_ok' depends on axioms" not in out or 'sorryAx' in out:
+            ok = False
+        if ok:
+            open(os.path.join(cache, key), 'w').write('')
+        return name, out, ok
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(len(fns), os.cpu_count() or 1))) as ex:
+        results = list(ex.map(prove, [n for n, _, _ in fns]))
+    lean_bytes = base.encode()
+    thm_start = base.count('\n') + 2
     failed, shown = set(), 0
+    printed = set()
+
+    def say(text):
+        nonlocal shown
+        if text not in printed:
+            printed.add(text)
+            print(text)
+            shown += 1
 
     def src_line_of_pos(pos):
         return lean_bytes[:pos].count(b'\n')                 # generated line - 1 = source line
 
-    for line, col, _, text in msgs:
-        name = None
-        for tl in sorted(thm_line):
-            if tl <= line:
-                name = thm_line[tl]
-        if name is None or line < min(thm_line):             # an error in the functions themselves
-            sl = line - 1
-            first = text.splitlines()[0]
-            code = src_lines[sl - 1].strip() if 0 < sl <= len(src_lines) else ''
-            print(f'{path}:{sl}:{col + 1}: error: {first}\n    {code}')
-            shown += 1
-            for fname, _, fl in fns:
-                if fl <= sl:
-                    cur = fname
-            failed.add(cur if fns and fns[0][2] <= sl else '?')
+    for name, out, ok in results:
+        if ok:
             continue
         failed.add(name)
-        if not text.startswith('unsolved goals'):
-            print(f'{path}: in `{name}`: {text.splitlines()[0]}')
-            shown += 1
-            continue
-        gs = goals(text)
-        for gi, (hyps, goal) in enumerate(gs):
-            if gi > 0 and not show_all:
-                print(f'    ({len(gs) - 1} more obligation(s) of `{name}` not shown; they often follow from the first. '
-                      f'`tenon check -a` shows all.)')
-                break
-            tag = None
-            for h in hyps:
-                m = re.search(r'Tag "@(\d+)\|([^"|]*)(\|inv)?"', h)
-                if m:
-                    tag = m
-            if tag:
-                sl = src_line_of_pos(int(tag.group(1)))
-                names = [n for n in tag.group(2).split(',') if n]
-                g = goal if '✝' not in re.sub(r'[iv]✝', '', goal) else rename(hyps, goal, names)[0]
-                g = re.sub(r'↑?([A-Za-z_][A-Za-z_0-9]*)\.length', r'len(\1)', g).replace('↑', '')
+        msgs = [m for m in messages(out) if m[2] == 'error']
+        if not msgs:
+            say(f'{path}: in `{name}`: the proof checker failed:\n' + out[-1500:])
+        for line, col, _, text in msgs:
+            if line < thm_start:                                 # an error in the functions themselves
+                sl = line - 1
+                first = text.splitlines()[0]
                 code = src_lines[sl - 1].strip() if 0 < sl <= len(src_lines) else ''
-                counter = 'iter_'
-                for back in range(sl - 1, -1, -1):           # the nearest loop above this line
-                    lm = re.match(r'\s*(?:for\s+([A-Za-z_][A-Za-z_0-9]*)\s+upto|loop\b)', src_lines[back])
-                    if lm:
-                        counter = lm.group(1) or 'iter_'
-                        break
-                g = re.sub(r'i✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*', counter, g)
-                what = kind(goal)
-                if tag.group(3):
-                    what = 'cannot show that the invariant of this loop holds again after an iteration'
-                elif code.startswith('loop') and what == 'cannot show':
-                    what = ('cannot show that this loop leaves by `break` within its bound '
-                            '(or that its invariant holds on entry)')
-                elif code.startswith('for') and what == 'cannot show':
-                    what = 'cannot show that the invariant of this loop holds on entry'
-                print(f'{path}:{sl}: in `{name}`: {what}\n    {code}\n    needed: {pretty(g)}')
-            else:
-                print(f'{path}: in `{name}`: {kind(goal)}\n    needed: {pretty(goal)}   (values shown with internal names)')
-            shown += 1
-        if verbose:
-            print(text)
+                say(f'{path}:{sl}:{col + 1}: error: {first}\n    {code}')
+                continue
+            if not text.startswith('unsolved goals'):
+                say(f'{path}: in `{name}`: {text.splitlines()[0]}')
+                continue
+            gs = goals(text)
+            for gi, (hyps, goal) in enumerate(gs):
+                if gi > 0 and not show_all:
+                    say(f'    ({len(gs) - 1} more obligation(s) of `{name}` not shown; they often follow from the first. '
+                        f'`tenon check -a` shows all.)')
+                    break
+                say(describe(name, hyps, goal, src_lines, src_line_of_pos))
+            if verbose:
+                print(text)
     ok = [n for n, _, _ in fns if n not in failed]
     log = sys.stderr if args[0] == 'emit' else sys.stdout
     for n in ok:
@@ -276,7 +350,9 @@ def main():
         sys.exit(1)
     print(f'{len(fns)} function(s) proved', file=log)
     if args[0] == 'emit':
-        out = p.stdout
+        gen = os.path.join(work, 'Emit.lean')
+        open(gen, 'w').write(base + emit_cmd)
+        out = subprocess.run(['lake', 'env', 'lean', gen], cwd=ROOT, env=env, capture_output=True, text=True).stdout
         if 'TENON-EMIT-ERROR' in out:
             sys.exit('tenon: ' + out[out.index('TENON-EMIT-ERROR') + 17:].splitlines()[0])
         if '//TENON-C-BEGIN' not in out:

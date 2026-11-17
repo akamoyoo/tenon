@@ -1,0 +1,14 @@
+// Prefix sums, specified with a range sum: out[j] is the sum of x[0..j].
+fn prefix_sum(x: slice(-1000000000, 1000000000), out: inout slice(-1000000000000000, 1000000000000000))
+    -> int(0, 0)
+  requires (len(x) == len(out) && len(x) <= 1000000)
+  ensures (forall j in 0 .. len(x): out[j] == sum(x, 0, j + 1))
+{
+  let acc: int(-1000000000000000, 1000000000000000) = 0;
+  for i upto len(x)
+      invariant (-1000000000 * i <= acc && acc <= 1000000000 * i && acc == sum(x, 0, i)
+                 && forall j in 0 .. i: out[j] == sum(x, 0, j + 1)) {
+    acc = acc + x[i];
+    out[i] = acc;
+  }
+}
